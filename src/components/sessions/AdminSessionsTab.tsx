@@ -75,8 +75,8 @@ export function AdminSessionsTab() {
     today.setHours(0, 0, 0, 0)
     const created: Array<Record<string, unknown>> = []
 
-    // Lặp 7 ngày tới
-    for (let i = 1; i <= 7; i++) {
+    // Lặp HÔM NAY + 14 ngày tới
+    for (let i = 0; i <= 14; i++) {
       const date = new Date(today.getTime() + i * 86400000)
       const isoDow = date.getDay() === 0 ? 7 : date.getDay()
       // Tìm schedules cho ngày này
@@ -115,7 +115,7 @@ export function AdminSessionsTab() {
       toast.error(friendlyError(error))
       return
     }
-    toast.success(`Đã sinh ${count ?? created.length} session cho 7 ngày tới`)
+    toast.success(`Đã sinh ${count ?? created.length} session cho 14 ngày tới`)
     load()
   }
 
@@ -146,10 +146,10 @@ export function AdminSessionsTab() {
       <div className="p-4 bg-white border-b border-gray-100 space-y-2">
         <Button onClick={generateNextWeek} loading={generating} className="w-full">
           <Sparkles className="w-4 h-4 mr-1" />
-          Sinh session cho 7 ngày tới
+          Sinh session 14 ngày tới (gồm hôm nay)
         </Button>
         <p className="text-xs text-gray-500 text-center">
-          Tạo session dựa trên lịch định kỳ active. Idempotent: không tạo trùng.
+          Tạo session dựa trên lịch định kỳ active. Idempotent: bấm nhiều lần không tạo trùng.
         </p>
       </div>
 

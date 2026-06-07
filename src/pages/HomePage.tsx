@@ -260,50 +260,56 @@ export function HomePage() {
         </button>
       </div>
 
-      {/* Buổi đánh hôm nay — TOP priority */}
-      {todaySessions.length > 0 && (
-        <div className="px-4 pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              Buổi đánh hôm nay
-            </h2>
-            <Link to="/events" className="text-xs text-primary font-semibold">
-              Xem tất cả →
-            </Link>
+      {/* Buổi đánh hôm nay — chỉ hiện sessions chưa end */}
+      {(() => {
+        const nowMs = Date.now()
+        const upcomingToday = todaySessions.filter((s) => {
+          const end = new Date(`${s.session_date}T${s.end_time}`).getTime()
+          return end > nowMs
+        })
+        if (upcomingToday.length === 0) return null
+        return (
+          <div className="px-4 pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                Buổi đánh hôm nay
+              </h2>
+              <Link to="/events" className="text-xs text-primary font-semibold">
+                Xem tất cả →
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {upcomingToday
+                .filter((s) => s.activity_type === 'social')
+                .map((s) => (
+                  <SessionCardHero
+                    key={s.id}
+                    session={s}
+                    activityType={activityTypes.find((a) => a.key === s.activity_type)}
+                    checkinCount={sessionCheckinCounts[s.id] ?? 0}
+                    hasCheckedIn={mySessionCheckins.has(s.id)}
+                  />
+                ))}
+              {upcomingToday.filter((s) => s.activity_type !== 'social').length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {upcomingToday
+                    .filter((s) => s.activity_type !== 'social')
+                    .map((s) => (
+                      <SessionCardMini
+                        key={s.id}
+                        session={s}
+                        activityType={activityTypes.find((a) => a.key === s.activity_type)}
+                        checkinCount={sessionCheckinCounts[s.id] ?? 0}
+                        hasCheckedIn={mySessionCheckins.has(s.id)}
+                      />
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="space-y-2">
-            {/* Social hero */}
-            {todaySessions
-              .filter((s) => s.activity_type === 'social')
-              .map((s) => (
-                <SessionCardHero
-                  key={s.id}
-                  session={s}
-                  activityType={activityTypes.find((a) => a.key === s.activity_type)}
-                  checkinCount={sessionCheckinCounts[s.id] ?? 0}
-                  hasCheckedIn={mySessionCheckins.has(s.id)}
-                />
-              ))}
-            {/* Training + Ball machine compact 2-col */}
-            {todaySessions.filter((s) => s.activity_type !== 'social').length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {todaySessions
-                  .filter((s) => s.activity_type !== 'social')
-                  .map((s) => (
-                    <SessionCardMini
-                      key={s.id}
-                      session={s}
-                      activityType={activityTypes.find((a) => a.key === s.activity_type)}
-                      checkinCount={sessionCheckinCounts[s.id] ?? 0}
-                      hasCheckedIn={mySessionCheckins.has(s.id)}
-                    />
-                  ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Hero Banner: Featured tournaments */}
       {featuredTournaments.length > 0 ? (

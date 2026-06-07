@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { Calendar, History } from 'lucide-react'
 import { SessionCard, SessionCardHero, SessionCardMini } from '../components/sessions/SessionCard'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -13,6 +13,7 @@ import type {
 } from '../types/database'
 
 type Filter = 'all' | ActivityTypeKey
+type TimeTab = 'upcoming' | 'history'
 
 export function SessionsPage() {
   const { member: me } = useAuth()
@@ -22,15 +23,16 @@ export function SessionsPage() {
   const [myCheckins, setMyCheckins] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
+  const [timeTab, setTimeTab] = useState<TimeTab>('upcoming')
 
   useEffect(() => {
     let mounted = true
     async function load() {
       if (!me) return
-      // Lấy sessions từ 7 ngày trước đến 14 ngày tới
+      // Lấy sessions từ 14 ngày trước đến 30 ngày tới (cover cả upcoming + history)
       const now = new Date()
-      const from = new Date(now.getTime() - 7 * 86400000)
-      const to = new Date(now.getTime() + 14 * 86400000)
+      const from = new Date(now.getTime() - 14 * 86400000)
+      const to = new Date(now.getTime() + 30 * 86400000)
 
       const [{ data: s }, { data: at }, { data: ci }, { data: mc }] = await Promise.all([
         supabase
@@ -71,10 +73,16 @@ export function SessionsPage() {
   }, [activityTypes])
 
   const filtered = useMemo(() => {
-    return sessions.filter((s) => filter === 'all' || s.activity_type === filter)
-  }, [sessions, filter])
+    const nowMs = Date.now()
+    return sessions.filter((s) => {
+      if (filter !== 'all' && s.activity_type !== filter) return false
+      const endMs = new Date(`${s.session_date}T${s.end_time}`).getTime()
+      const isUpcoming = endMs > nowMs
+      return timeTab === 'upcoming' ? isUpcoming : !isUpcoming
+    })
+  }, [sessions, filter, timeTab])
 
-  // Group by date
+  // Group by date — history sort DESC để recent đầu, upcoming sort ASC
   const groupedByDate = useMemo(() => {
     const m = new Map<string, PlaySession[]>()
     for (const s of filtered) {
@@ -82,11 +90,54 @@ export function SessionsPage() {
       arr.push(s)
       m.set(s.session_date, arr)
     }
-    return Array.from(m.entries())
-  }, [filtered])
+    const entries = Array.from(m.entries())
+    return timeTab === 'history' ? entries.reverse() : entries
+  }, [filtered, timeTab])
+
+  const upcomingCount = useMemo(() => {
+    const nowMs = Date.now()
+    return sessions.filter(
+      (s) => new Date(`${s.session_date}T${s.end_time}`).getTime() > nowMs
+    ).length
+  }, [sessions])
+
+  const historyCount = useMemo(() => {
+    const nowMs = Date.now()
+    return sessions.filter(
+      (s) => new Date(`${s.session_date}T${s.end_time}`).getTime() <= nowMs
+    ).length
+  }, [sessions])
 
   return (
     <div>
+      {/* Time tab: Sắp tới / Lịch sử */}
+      <div className="bg-white border-b border-gray-100 grid grid-cols-2">
+        <button
+          onClick={() => setTimeTab('upcoming')}
+          className={cn(
+            'py-2.5 text-xs font-medium border-b-2 transition-colors flex items-center justify-center gap-1',
+            timeTab === 'upcoming'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500'
+          )}
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          Sắp tới ({upcomingCount})
+        </button>
+        <button
+          onClick={() => setTimeTab('history')}
+          className={cn(
+            'py-2.5 text-xs font-medium border-b-2 transition-colors flex items-center justify-center gap-1',
+            timeTab === 'history'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500'
+          )}
+        >
+          <History className="w-3.5 h-3.5" />
+          Lịch sử 14 ngày ({historyCount})
+        </button>
+      </div>
+
       {/* Filter chips */}
       <div className="px-4 py-3 bg-white border-b border-gray-100">
         <div className="flex gap-2 overflow-x-auto -mx-1 px-1 scrollbar-hide">
@@ -127,10 +178,19 @@ export function SessionsPage() {
 
         {!loading && groupedByDate.length === 0 && (
           <div className="text-center py-12 text-gray-500 text-sm">
-            <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-            Chưa có buổi đánh nào trong 2 tuần tới.
-            <br />
-            <span className="text-xs">Đợi admin sinh lịch hoặc lịch tự sinh tuần tới.</span>
+            {timeTab === 'upcoming' ? (
+              <>
+                <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                Chưa có buổi đánh nào sắp tới.
+                <br />
+                <span className="text-xs">Đợi admin sinh lịch hoặc auto-gen 8h sáng.</span>
+              </>
+            ) : (
+              <>
+                <History className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                Chưa có lịch sử trong 14 ngày qua.
+              </>
+            )}
           </div>
         )}
 

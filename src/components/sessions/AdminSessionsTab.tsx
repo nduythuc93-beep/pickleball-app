@@ -73,19 +73,38 @@ export function AdminSessionsTab() {
     setGenerating(true)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const created: Array<Record<string, unknown>> = []
+    const startStr = today.toISOString().slice(0, 10)
+    const endStr = new Date(today.getTime() + 14 * 86400000).toISOString().slice(0, 10)
 
-    // Lặp HÔM NAY + 14 ngày tới
+    // Lấy sessions đã có trong range để dedup
+    const { data: existing, error: fetchErr } = await supabase
+      .from('play_sessions')
+      .select('schedule_id, session_date')
+      .gte('session_date', startStr)
+      .lte('session_date', endStr)
+      .not('schedule_id', 'is', null)
+    if (fetchErr) {
+      setGenerating(false)
+      toast.error(friendlyError(fetchErr))
+      return
+    }
+    const existingKeys = new Set(
+      (existing ?? []).map((s) => `${s.schedule_id}:${s.session_date}`)
+    )
+
+    const created: Array<Record<string, unknown>> = []
     for (let i = 0; i <= 14; i++) {
       const date = new Date(today.getTime() + i * 86400000)
       const isoDow = date.getDay() === 0 ? 7 : date.getDay()
-      // Tìm schedules cho ngày này
+      const dateStr = date.toISOString().slice(0, 10)
       const matches = schedules.filter((s) => s.day_of_week === isoDow && s.is_active)
       for (const sch of matches) {
+        const key = `${sch.id}:${dateStr}`
+        if (existingKeys.has(key)) continue // skip duplicate
         const at = atByKey.get(sch.activity_type)
         created.push({
           activity_type: sch.activity_type,
-          session_date: date.toISOString().slice(0, 10),
+          session_date: dateStr,
           start_time: sch.start_time,
           end_time: sch.end_time,
           venue: sch.venue,
@@ -100,22 +119,18 @@ export function AdminSessionsTab() {
     }
 
     if (created.length === 0) {
-      toast.error('Không có schedule active nào')
       setGenerating(false)
+      toast.success('Tất cả session đã có sẵn — không cần tạo thêm')
       return
     }
 
-    // Insert với ON CONFLICT (schedule_id, session_date) DO NOTHING
-    // Supabase JS không có DO NOTHING trực tiếp — dùng upsert với ignoreDuplicates
-    const { error, count } = await supabase
-      .from('play_sessions')
-      .upsert(created, { onConflict: 'schedule_id,session_date', ignoreDuplicates: true, count: 'exact' })
+    const { error } = await supabase.from('play_sessions').insert(created)
     setGenerating(false)
     if (error) {
       toast.error(friendlyError(error))
       return
     }
-    toast.success(`Đã sinh ${count ?? created.length} session cho 14 ngày tới`)
+    toast.success(`Đã sinh ${created.length} session mới`)
     load()
   }
 

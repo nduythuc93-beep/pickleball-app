@@ -21,7 +21,6 @@ const CATEGORIES = [
   { key: 'mens_doubles', label: 'Nam đôi' },
   { key: 'womens_doubles', label: 'Nữ đôi' },
   { key: 'mixed', label: 'Hỗn hợp' },
-  { key: 'singles', label: 'Đơn' },
 ] as const
 
 type Category = (typeof CATEGORIES)[number]['key']
@@ -50,12 +49,12 @@ export function RegistrationForm({
     }
   }, [open, existing])
 
-  const isDoubles = category !== 'singles'
+  // Tất cả category đều là đôi → luôn cần partner
   const partnerOptions = members.filter((m) => m.id !== me?.id && m.is_active)
 
   async function onSubmit() {
     if (!me) return
-    if (isDoubles && !partnerId) {
+    if (!partnerId) {
       toast.error('Chọn partner ghép cặp')
       return
     }
@@ -63,7 +62,7 @@ export function RegistrationForm({
     const payload = {
       tournament_id: tournament.id,
       member_id: me.id,
-      partner_id: isDoubles ? partnerId : null,
+      partner_id: partnerId,
       category,
       status: 'pending' as const,
     }
@@ -132,26 +131,24 @@ export function RegistrationForm({
           </div>
         </div>
 
-        {isDoubles && (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Partner ghép cặp</label>
-            <select
-              value={partnerId}
-              onChange={(e) => setPartnerId(e.target.value)}
-              className="w-full px-3 py-2 min-h-[44px] border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
-            >
-              <option value="">-- Chọn partner --</option>
-              {partnerOptions.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.full_name} ({m.skill_level})
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500">
-              Admin sẽ confirm để partner được auto-thêm vào danh sách
-            </p>
-          </div>
-        )}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Partner ghép cặp *</label>
+          <select
+            value={partnerId}
+            onChange={(e) => setPartnerId(e.target.value)}
+            className="w-full px-3 py-2 min-h-[44px] border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+          >
+            <option value="">-- Chọn partner --</option>
+            {partnerOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.full_name} ({m.skill_level})
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500">
+            Admin sẽ confirm để partner được auto-thêm vào danh sách
+          </p>
+        </div>
       </div>
     </Modal>
   )

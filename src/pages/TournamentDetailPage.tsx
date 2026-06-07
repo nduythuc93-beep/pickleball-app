@@ -267,8 +267,22 @@ export function TournamentDetailPage() {
 }
 
 function InfoTab({ tournament }: { tournament: Tournament }) {
+  const bannerSrc = tournament.banner_url
+    ? `${tournament.banner_url}${tournament.banner_updated_at ? `?v=${encodeURIComponent(tournament.banner_updated_at)}` : ''}`
+    : null
+
   return (
-    <div className="p-4 space-y-3">
+    <div className="space-y-3">
+      {bannerSrc && (
+        <div className="aspect-[16/9] bg-gray-100 overflow-hidden">
+          <img
+            src={bannerSrc}
+            alt={tournament.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      <div className="p-4 space-y-3">
       <div className="bg-white rounded-xl p-4 space-y-3">
         {tournament.description && (
           <p className="text-sm text-gray-700">{tournament.description}</p>
@@ -300,6 +314,7 @@ function InfoTab({ tournament }: { tournament: Tournament }) {
           </div>
         )}
       </div>
+      </div>
     </div>
   )
 }
@@ -330,7 +345,6 @@ function RegisterTab({
     mens_doubles: 'Nam đôi',
     womens_doubles: 'Nữ đôi',
     mixed: 'Hỗn hợp',
-    singles: 'Đơn',
   }
 
   return (

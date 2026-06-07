@@ -101,6 +101,109 @@ export async function uploadAvatar(memberId: string, file: File): Promise<{
   return { url: pub.publicUrl, updatedAt }
 }
 
+// ========================================
+// TOURNAMENT BANNER
+// ========================================
+
+const BANNER_W = 1200
+const BANNER_H = 630
+
+/**
+ * Resize ảnh về 1200x630 webp với cover-fit (crop center).
+ */
+async function resizeBannerWebp(file: File): Promise<Blob> {
+  const img = await fileToImage(file)
+  const canvas = document.createElement('canvas')
+  canvas.width = BANNER_W
+  canvas.height = BANNER_H
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Không lấy được canvas context')
+
+  // Cover fit: scale to fill, crop overflow center
+  const scale = Math.max(BANNER_W / img.width, BANNER_H / img.height)
+  const w = img.width * scale
+  const h = img.height * scale
+  const dx = (BANNER_W - w) / 2
+  const dy = (BANNER_H - h) / 2
+  ctx.drawImage(img, dx, dy, w, h)
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Convert webp thất bại'))),
+      'image/webp',
+      QUALITY
+    )
+  })
+}
+
+/**
+ * Upload banner cho 1 tournament.
+ * - Resize 1200x630 webp (16:9-ish)
+ * - Lưu trong avatars bucket, folder tournaments/{tournamentId}
+ * - Xoá banner cũ trước khi upload mới
+ */
+export async function uploadTournamentBanner(
+  tournamentId: string,
+  file: File
+): Promise<{ url: string; updatedAt: string }> {
+  if (file.size > 10 * 1024 * 1024) throw new Error('Ảnh tối đa 10MB')
+  if (!/^image\/(jpe?g|png|webp)$/i.test(file.type))
+    throw new Error('Chỉ chấp nhận JPG, PNG, WEBP')
+
+  const blob = await resizeBannerWebp(file)
+  const ts = Date.now()
+  const folder = `tournaments/${tournamentId}`
+  const path = `${folder}/${ts}.webp`
+
+  // Xoá file cũ
+  const { data: existing } = await supabase.storage.from(BUCKET).list(folder)
+  if (existing && existing.length > 0) {
+    const toRemove = existing.map((f) => `${folder}/${f.name}`)
+    await supabase.storage.from(BUCKET).remove(toRemove)
+  }
+
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, blob, {
+    contentType: 'image/webp',
+    cacheControl: '3600',
+    upsert: true,
+  })
+  if (upErr) {
+    console.error('[uploadTournamentBanner] storage error:', upErr)
+    throw new Error(`Upload thất bại: ${upErr.message}`)
+  }
+
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  const updatedAt = new Date().toISOString()
+
+  const { error: dbErr } = await supabase
+    .from('tournaments')
+    .update({ banner_url: pub.publicUrl, banner_updated_at: updatedAt })
+    .eq('id', tournamentId)
+  if (dbErr) {
+    console.error('[uploadTournamentBanner] db error:', dbErr)
+    throw new Error(`Lưu banner URL thất bại: ${dbErr.message}`)
+  }
+
+  return { url: pub.publicUrl, updatedAt }
+}
+
+export async function removeTournamentBanner(tournamentId: string) {
+  const folder = `tournaments/${tournamentId}`
+  const { data: existing } = await supabase.storage.from(BUCKET).list(folder)
+  if (existing && existing.length > 0) {
+    const toRemove = existing.map((f) => `${folder}/${f.name}`)
+    await supabase.storage.from(BUCKET).remove(toRemove)
+  }
+  await supabase
+    .from('tournaments')
+    .update({ banner_url: null, banner_updated_at: new Date().toISOString() })
+    .eq('id', tournamentId)
+}
+
+// ========================================
+// AVATAR
+// ========================================
+
 export async function removeAvatar(memberId: string) {
   const { data: existing } = await supabase.storage.from(BUCKET).list(memberId)
   if (existing && existing.length > 0) {

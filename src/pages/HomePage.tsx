@@ -448,19 +448,42 @@ function TournamentBanner({
   const gradient = getTournamentGradient(t)
   const isOpen = t.status === 'open'
   const isOngoing = t.status === 'ongoing'
+  const hasBanner = Boolean(t.banner_url)
+  const bannerSrc = hasBanner && t.banner_url
+    ? `${t.banner_url}${t.banner_updated_at ? `?v=${encodeURIComponent(t.banner_updated_at)}` : ''}`
+    : null
 
   return (
     <Link
       to={`/tournaments/${t.id}`}
       className={cn(
         'snap-center flex-shrink-0 relative overflow-hidden rounded-2xl shadow-lg text-white',
-        gradient,
+        !hasBanner && gradient,
         single ? 'w-full' : 'w-[88%]'
       )}
     >
-      {/* Decorative trophy pattern */}
-      <Trophy className="absolute -right-10 -top-10 w-56 h-56 opacity-10 rotate-12" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+      {/* Background ảnh nếu có, gradient nếu không */}
+      {bannerSrc && (
+        <img
+          src={bannerSrc}
+          alt={t.name}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+        />
+      )}
+      {/* Decorative trophy chỉ hiện khi không có ảnh */}
+      {!hasBanner && (
+        <Trophy className="absolute -right-10 -top-10 w-56 h-56 opacity-10 rotate-12" />
+      )}
+      {/* Overlay đậm hơn nếu có ảnh để text đọc rõ */}
+      <div
+        className={cn(
+          'absolute inset-0',
+          hasBanner
+            ? 'bg-gradient-to-t from-black/70 via-black/30 to-black/20'
+            : 'bg-gradient-to-t from-black/30 via-transparent to-transparent'
+        )}
+      />
 
       <div className="relative p-5 h-[180px] flex flex-col justify-between">
         <div>

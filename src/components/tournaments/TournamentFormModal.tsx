@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { ImagePlus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
+import { uploadTournamentBanner, removeTournamentBanner } from '../../lib/storage'
 import { useAuth } from '../../hooks/useAuth'
 import { cn } from '../../lib/cn'
 import type { SkillLevel, Tournament, TournamentFormat, TournamentStatus } from '../../types/database'
@@ -41,6 +43,9 @@ export function TournamentFormModal({ open, onClose, tournament, onSaved }: Prop
   const [maxTeams, setMaxTeams] = useState('8')
   const [status, setStatus] = useState<TournamentStatus>('open')
   const [saving, setSaving] = useState(false)
+  const [bannerFile, setBannerFile] = useState<File | null>(null)
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -53,6 +58,7 @@ export function TournamentFormModal({ open, onClose, tournament, onSaved }: Prop
       setVenue(tournament.venue ?? '')
       setMaxTeams(tournament.max_teams ? String(tournament.max_teams) : '')
       setStatus(tournament.status)
+      setBannerPreview(tournament.banner_url ?? null)
     } else {
       setName('')
       setDescription('')
@@ -64,8 +70,41 @@ export function TournamentFormModal({ open, onClose, tournament, onSaved }: Prop
       setVenue('')
       setMaxTeams('8')
       setStatus('open')
+      setBannerPreview(null)
     }
+    setBannerFile(null)
   }, [open, tournament])
+
+  function onPickBanner(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Ảnh tối đa 10MB')
+      return
+    }
+    setBannerFile(file)
+    setBannerPreview(URL.createObjectURL(file))
+  }
+
+  async function onRemoveBanner() {
+    if (!tournament?.banner_url) {
+      // Chưa save, chỉ clear local
+      setBannerFile(null)
+      setBannerPreview(null)
+      if (bannerInputRef.current) bannerInputRef.current.value = ''
+      return
+    }
+    if (!confirm('Xoá banner này?')) return
+    try {
+      await removeTournamentBanner(tournament.id)
+      setBannerFile(null)
+      setBannerPreview(null)
+      toast.success('Đã xoá banner')
+      onSaved()
+    } catch (err) {
+      toast.error(friendlyError(err))
+    }
+  }
 
   function toggleSkill(s: SkillLevel) {
     setSkillFilter((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
@@ -87,19 +126,38 @@ export function TournamentFormModal({ open, onClose, tournament, onSaved }: Prop
       max_teams: maxTeams ? parseInt(maxTeams, 10) : null,
       status,
     }
+    let tournamentId = tournament?.id ?? null
     let error
     if (isEdit && tournament) {
       ;({ error } = await supabase.from('tournaments').update(payload).eq('id', tournament.id))
     } else {
-      ;({ error } = await supabase
+      const { data, error: insErr } = await supabase
         .from('tournaments')
-        .insert({ ...payload, created_by: user?.id ?? null }))
+        .insert({ ...payload, created_by: user?.id ?? null })
+        .select('id')
+        .single()
+      error = insErr
+      tournamentId = data?.id ?? null
     }
-    setSaving(false)
+
     if (error) {
+      setSaving(false)
       toast.error(friendlyError(error))
       return
     }
+
+    // Upload banner nếu có file mới
+    if (bannerFile && tournamentId) {
+      try {
+        await uploadTournamentBanner(tournamentId, bannerFile)
+      } catch (err) {
+        setSaving(false)
+        toast.error(friendlyError(err))
+        return
+      }
+    }
+
+    setSaving(false)
     toast.success(isEdit ? 'Đã cập nhật' : 'Đã tạo giải')
     onSaved()
     onClose()
@@ -136,6 +194,58 @@ export function TournamentFormModal({ open, onClose, tournament, onSaved }: Prop
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
             placeholder="Vui là chính, có giải thưởng nhỏ..."
           />
+        </div>
+
+        {/* Banner ảnh */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Banner ảnh
+            <span className="text-xs text-gray-500 font-normal ml-1">
+              (16:9 — tự crop center)
+            </span>
+          </label>
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={onPickBanner}
+            className="hidden"
+          />
+          {bannerPreview ? (
+            <div className="relative rounded-lg overflow-hidden border border-gray-200">
+              <img
+                src={bannerPreview}
+                alt="Banner preview"
+                className="w-full aspect-[16/9] object-cover"
+              />
+              <div className="absolute bottom-2 right-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => bannerInputRef.current?.click()}
+                  className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-medium text-gray-800 hover:bg-white"
+                >
+                  Đổi ảnh
+                </button>
+                <button
+                  type="button"
+                  onClick={onRemoveBanner}
+                  className="bg-red-500/90 backdrop-blur px-3 py-1 rounded-full text-xs font-medium text-white hover:bg-red-600 flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Xoá
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              className="w-full aspect-[16/9] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-1 text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors"
+            >
+              <ImagePlus className="w-6 h-6" />
+              <span className="text-xs font-medium">Thêm banner ảnh</span>
+              <span className="text-[10px]">JPG / PNG / WEBP — max 10MB</span>
+            </button>
+          )}
         </div>
 
         <div className="space-y-1">

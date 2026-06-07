@@ -68,6 +68,8 @@ export type Tournament = {
   max_teams: number | null
   status: TournamentStatus
   winner_ids: string[] | null
+  banner_url: string | null
+  banner_updated_at: string | null
   created_by: string | null
   created_at: string
 }

@@ -4,6 +4,7 @@ import { AuthProvider } from './hooks/useAuth'
 import { Layout } from './components/layout/Layout'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
+import { HomePage } from './pages/HomePage'
 import { MembersPage } from './pages/MembersPage'
 import { MemberDetailPage } from './pages/MemberDetailPage'
 import { SurveysPage } from './pages/SurveysPage'
@@ -21,6 +22,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
+              <Route path="/home" element={<HomePage />} />
               <Route path="/members" element={<MembersPage />} />
               <Route path="/members/:id" element={<MemberDetailPage />} />
               <Route path="/surveys" element={<SurveysPage />} />
@@ -34,7 +36,7 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>
-          <Route path="*" element={<Navigate to="/members" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -47,7 +47,7 @@ export function ProtectedRoute({ adminOnly = false }: Props) {
   }
 
   if (adminOnly && !isAdmin) {
-    return <Navigate to="/members" replace />
+    return <Navigate to="/home" replace />
   }
 
   return <Outlet />

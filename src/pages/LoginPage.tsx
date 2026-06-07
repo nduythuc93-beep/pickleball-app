@@ -15,7 +15,7 @@ export function LoginPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
 
-  if (!loading && session) return <Navigate to="/members" replace />
+  if (!loading && session) return <Navigate to="/home" replace />
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()

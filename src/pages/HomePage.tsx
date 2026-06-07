@@ -6,11 +6,14 @@ import {
   ClipboardList,
   Trophy,
   Users,
-  Plus,
   Award,
   Activity as ActivityIcon,
   Calendar,
   MapPin,
+  ArrowRight,
+  CheckCircle2,
+  Sparkles,
+  Plus,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -46,6 +49,24 @@ const greetingByHour = (h: number) => {
   return 'Chào buổi tối'
 }
 
+const formatGradient: Record<string, string> = {
+  round_robin: 'bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700',
+  single_elim: 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-600',
+  double_elim: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600',
+  custom: 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900',
+}
+
+const statusByStatus: Record<string, string> = {
+  ongoing: 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700',
+  open: '',
+  draft: '',
+  completed: '',
+}
+
+function getTournamentGradient(t: Tournament) {
+  return statusByStatus[t.status] || formatGradient[t.format] || formatGradient.custom
+}
+
 export function HomePage() {
   const { member: me, isAdmin, signOut } = useAuth()
   const [loading, setLoading] = useState(true)
@@ -75,7 +96,7 @@ export function HomePage() {
           .select('*')
           .neq('status', 'completed')
           .order('event_date', { ascending: true, nullsFirst: false })
-          .limit(3),
+          .limit(5),
         supabase
           .from('surveys')
           .select('*')
@@ -94,15 +115,14 @@ export function HomePage() {
           .limit(50),
         supabase
           .from('tournament_registrations')
-          .select('*, tournaments!inner(id, name), members!tournament_registrations_member_id_fkey(full_name)')
+          .select(
+            '*, tournaments!inner(id, name), members!tournament_registrations_member_id_fkey(full_name)'
+          )
           .eq('status', 'confirmed')
           .eq('is_mirror', false)
           .order('registered_at', { ascending: false })
           .limit(5),
-        supabase
-          .from('survey_responses')
-          .select('survey_id')
-          .eq('member_id', me.id),
+        supabase.from('survey_responses').select('survey_id').eq('member_id', me.id),
         supabase
           .from('tournament_registrations')
           .select('tournament_id')
@@ -119,7 +139,7 @@ export function HomePage() {
         new Set((myRegs ?? []).map((r) => r.tournament_id as string))
       )
 
-      // Top scorers from matches
+      // Top scorers
       const memberMap = new Map<string, Member>()
       for (const m of (members ?? []) as Member[]) memberMap.set(m.id, m)
       const winCounts = new Map<string, number>()
@@ -135,7 +155,7 @@ export function HomePage() {
         .slice(0, 5)
       setTopScorers(scorers)
 
-      // Activity feed: merge matches + registrations sort by time
+      // Activity
       const acts: ActivityItem[] = []
       for (const m of (matches ?? []) as TournamentMatch[]) {
         if (!m.played_at || !m.winner_ids) continue
@@ -180,125 +200,113 @@ export function HomePage() {
     () => surveys.filter((s) => !myResponded.has(s.id)).length,
     [surveys, myResponded]
   )
-  const upcomingTournaments = tournaments.filter((t) => t.status !== 'completed').length
+  const featuredTournaments = useMemo(
+    () => tournaments.filter((t) => t.status === 'open' || t.status === 'ongoing'),
+    [tournaments]
+  )
 
   const now = new Date()
 
   if (!me) return null
 
   return (
-    <div className="pb-6">
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-primary-50 to-white px-4 pt-6 pb-5">
-        <div className="flex items-start gap-3">
-          <MemberAvatar member={me} size="lg" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500">{greetingByHour(now.getHours())}</p>
-            <h1 className="text-xl font-bold text-gray-900 truncate">
-              {me.full_name} 👋
-            </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {now.toLocaleDateString('vi-VN', {
-                weekday: 'long',
-                day: '2-digit',
-                month: '2-digit',
-              })}
-            </p>
-          </div>
-          <button
-            onClick={signOut}
-            className="p-2 -mr-2 rounded-lg text-gray-400 hover:bg-white"
-            aria-label="Đăng xuất"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+    <div className="pb-6 bg-gray-50">
+      {/* Compact greeting bar */}
+      <div className="px-4 pt-5 pb-4 flex items-center gap-3 bg-white">
+        <MemberAvatar member={me} size="md" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-gray-500 font-medium">
+            {greetingByHour(now.getHours())}
+          </p>
+          <h1 className="text-base font-bold text-gray-900 truncate leading-tight">
+            {me.full_name} 👋
+          </h1>
         </div>
+        <button
+          onClick={signOut}
+          className="p-2 -mr-2 rounded-lg text-gray-400 hover:bg-gray-100"
+          aria-label="Đăng xuất"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="px-4 -mt-3 grid grid-cols-3 gap-2">
+      {/* Hero Banner: Featured tournaments */}
+      {featuredTournaments.length > 0 ? (
+        <div className="pt-4">
+          <div className="flex items-center justify-between px-4 mb-2">
+            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Nổi bật
+            </h2>
+            {featuredTournaments.length > 1 && (
+              <span className="text-[11px] text-gray-400">
+                Vuốt để xem thêm →
+              </span>
+            )}
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {featuredTournaments.map((t, i) => (
+              <TournamentBanner
+                key={t.id}
+                tournament={t}
+                isRegistered={myRegistrations.has(t.id)}
+                single={featuredTournaments.length === 1}
+                index={i}
+                total={featuredTournaments.length}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <NoTournamentBanner />
+      )}
+
+      {/* Stats Row */}
+      <div className="px-4 mt-4 grid grid-cols-3 gap-2">
         <StatCard
           to="/surveys"
           icon={ClipboardList}
           label="Khảo sát"
           value={pendingSurveys}
           accent={pendingSurveys > 0 ? 'red' : 'gray'}
-          sub={pendingSurveys > 0 ? 'chưa điền' : 'all done'}
+          sub={pendingSurveys > 0 ? 'chưa điền' : 'all done ✓'}
         />
         <StatCard
           to="/tournaments"
           icon={Trophy}
           label="Giải đấu"
-          value={upcomingTournaments}
+          value={tournaments.length}
           accent="primary"
-          sub="sắp tới"
+          sub="đang/sắp"
         />
         <StatCard
           to="/members"
           icon={Users}
           label="Thành viên"
           value={totalMembers}
-          accent="gray"
+          accent="indigo"
           sub="active"
         />
       </div>
 
-      {/* Quick actions (admin only) */}
+      {/* Admin Quick Actions */}
       {isAdmin && (
-        <div className="px-4 mt-4">
-          <p className="text-xs text-gray-500 mb-2 font-medium">⚡ Quick actions</p>
-          <div className="grid grid-cols-3 gap-2">
-            <QuickAction to="/admin" label="+ Khảo sát" icon={ClipboardList} />
-            <QuickAction to="/admin" label="+ Giải" icon={Trophy} />
-            <QuickAction to="/admin" label="+ Thành viên" icon={Users} />
+        <div className="px-4 mt-5">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-3 border border-primary/10">
+            <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Quick actions cho admin
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <QuickAction to="/admin" label="Khảo sát" icon={ClipboardList} />
+              <QuickAction to="/admin" label="Giải đấu" icon={Trophy} />
+              <QuickAction to="/admin" label="Thành viên" icon={Users} />
+            </div>
           </div>
         </div>
       )}
-
-      {/* Tournaments — priority section */}
-      <Section title="🏆 Giải sắp tới" href="/tournaments" loading={loading}>
-        {tournaments.length === 0 ? (
-          <Empty text="Chưa có giải nào sắp diễn ra" />
-        ) : (
-          tournaments.slice(0, 3).map((t) => (
-            <Link
-              key={t.id}
-              to={`/tournaments/${t.id}`}
-              className="bg-white rounded-xl p-3 block hover:bg-gray-50"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-sm text-gray-900 flex-1 min-w-0 truncate">
-                  {t.name}
-                </h3>
-                {myRegistrations.has(t.id) && (
-                  <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 rounded font-bold">
-                    ✓ Đã đăng ký
-                  </span>
-                )}
-                {!myRegistrations.has(t.id) && t.status === 'open' && (
-                  <span className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-700 rounded font-bold">
-                    Mở đăng ký
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-gray-600 mt-1.5">
-                {t.event_date && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(t.event_date).toLocaleDateString('vi-VN')}
-                  </span>
-                )}
-                {t.venue && (
-                  <span className="flex items-center gap-1 truncate">
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                    {t.venue}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))
-        )}
-      </Section>
 
       {/* Surveys */}
       <Section title="📋 Khảo sát" href="/surveys" loading={loading}>
@@ -311,30 +319,30 @@ export function HomePage() {
               <Link
                 key={s.id}
                 to={`/surveys/${s.id}`}
-                className="bg-white rounded-xl p-3 flex items-center gap-3 hover:bg-gray-50"
+                className="bg-white rounded-2xl p-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors shadow-sm"
               >
                 <div
                   className={cn(
-                    'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
-                    done ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
+                    done
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : 'bg-rose-50 text-rose-600'
                   )}
                 >
                   <ClipboardList className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-gray-900 truncate">{s.title}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="font-semibold text-sm text-gray-900 truncate">{s.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {done
-                      ? 'Đã điền ✓'
+                      ? '✓ Đã điền'
                       : s.closes_at
                       ? `Hạn ${new Date(s.closes_at).toLocaleDateString('vi-VN')}`
                       : 'Đang mở'}
                   </p>
                 </div>
                 {!done && (
-                  <span className="text-xs font-medium text-primary whitespace-nowrap">
-                    Điền →
-                  </span>
+                  <ArrowRight className="w-4 h-4 text-primary flex-shrink-0" />
                 )}
               </Link>
             )
@@ -342,37 +350,39 @@ export function HomePage() {
         )}
       </Section>
 
-      {/* Top scorers */}
+      {/* Top scorers — podium style */}
       <Section title="🥇 Top scorer" loading={loading}>
         {topScorers.length === 0 ? (
           <Empty text="Chưa có kết quả trận nào" />
         ) : (
-          <div className="bg-white rounded-xl divide-y divide-gray-100">
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
             {topScorers.map((s, i) => (
               <Link
                 key={s.member.id}
                 to={`/members/${s.member.id}`}
-                className="flex items-center gap-3 p-3 hover:bg-gray-50"
+                className={cn(
+                  'flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors',
+                  i !== topScorers.length - 1 && 'border-b border-gray-100'
+                )}
               >
-                <span
-                  className={cn(
-                    'w-6 text-center font-bold text-sm',
-                    i === 0 && 'text-amber-500',
-                    i === 1 && 'text-gray-400',
-                    i === 2 && 'text-orange-700'
-                  )}
-                >
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                <span className="w-7 text-center text-base">
+                  {i === 0 && '🥇'}
+                  {i === 1 && '🥈'}
+                  {i === 2 && '🥉'}
+                  {i > 2 && <span className="text-xs font-bold text-gray-400">#{i + 1}</span>}
                 </span>
                 <MemberAvatar member={s.member} size="sm" />
-                <span className="flex-1 text-sm font-medium truncate">
-                  {s.member.full_name}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{s.member.full_name}</p>
+                  <p className="text-[11px] text-gray-500">
+                    {s.wins} trận thắng
+                  </p>
+                </div>
                 <SkillBadge level={s.member.skill_level} size="sm" />
-                <span className="flex items-center gap-1 text-sm font-bold text-primary">
+                <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg">
                   <Award className="w-3 h-3" />
-                  {s.wins}
-                </span>
+                  <span className="text-xs font-bold">{s.wins}</span>
+                </div>
               </Link>
             ))}
           </div>
@@ -384,22 +394,33 @@ export function HomePage() {
         {activity.length === 0 ? (
           <Empty text="Chưa có hoạt động nào" />
         ) : (
-          <div className="bg-white rounded-xl divide-y divide-gray-100">
-            {activity.map((a) => (
-              <Link key={a.id} to={a.href} className="flex items-start gap-3 p-3 hover:bg-gray-50">
-                <ActivityIcon
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            {activity.map((a, i) => (
+              <Link
+                key={a.id}
+                to={a.href}
+                className={cn(
+                  'flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors',
+                  i !== activity.length - 1 && 'border-b border-gray-100'
+                )}
+              >
+                <div
                   className={cn(
-                    'w-4 h-4 mt-0.5 flex-shrink-0',
-                    a.type === 'match' ? 'text-amber-500' : 'text-primary'
+                    'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                    a.type === 'match'
+                      ? 'bg-amber-50 text-amber-600'
+                      : 'bg-blue-50 text-blue-600'
                   )}
-                />
+                >
+                  <ActivityIcon className="w-4 h-4" />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate">{a.title}</p>
+                  <p className="text-sm text-gray-900 leading-tight truncate">{a.title}</p>
                   {a.subtitle && (
-                    <p className="text-xs text-gray-500 truncate">{a.subtitle}</p>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{a.subtitle}</p>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                <span className="text-[10px] text-gray-400 whitespace-nowrap mt-1">
                   {timeAgo(a.timestamp)}
                 </span>
               </Link>
@@ -407,6 +428,125 @@ export function HomePage() {
           </div>
         )}
       </Section>
+    </div>
+  )
+}
+
+function TournamentBanner({
+  tournament: t,
+  isRegistered,
+  single,
+  index,
+  total,
+}: {
+  tournament: Tournament
+  isRegistered: boolean
+  single: boolean
+  index: number
+  total: number
+}) {
+  const gradient = getTournamentGradient(t)
+  const isOpen = t.status === 'open'
+  const isOngoing = t.status === 'ongoing'
+
+  return (
+    <Link
+      to={`/tournaments/${t.id}`}
+      className={cn(
+        'snap-center flex-shrink-0 relative overflow-hidden rounded-2xl shadow-lg text-white',
+        gradient,
+        single ? 'w-full' : 'w-[88%]'
+      )}
+    >
+      {/* Decorative trophy pattern */}
+      <Trophy className="absolute -right-10 -top-10 w-56 h-56 opacity-10 rotate-12" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+
+      <div className="relative p-5 h-[180px] flex flex-col justify-between">
+        <div>
+          <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            {isOngoing ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                Đang diễn ra
+              </>
+            ) : isOpen ? (
+              <>
+                <Sparkles className="w-3 h-3" /> Đang mở đăng ký
+              </>
+            ) : (
+              'Sắp diễn ra'
+            )}
+          </div>
+          <h2 className="text-xl font-bold mt-2 leading-tight line-clamp-2 drop-shadow">
+            {t.name}
+          </h2>
+        </div>
+
+        <div className="flex items-end justify-between gap-2">
+          <div className="space-y-1 text-xs">
+            {t.event_date && (
+              <div className="flex items-center gap-1.5 opacity-95">
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="font-medium">
+                  {new Date(t.event_date).toLocaleDateString('vi-VN', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit',
+                  })}
+                </span>
+              </div>
+            )}
+            {t.venue && (
+              <div className="flex items-center gap-1.5 opacity-90">
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[140px]">{t.venue}</span>
+              </div>
+            )}
+          </div>
+
+          {isRegistered ? (
+            <span className="bg-white/25 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-white/30">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Đã đăng ký
+            </span>
+          ) : isOpen ? (
+            <span className="bg-white text-gray-900 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-md">
+              Đăng ký
+              <ArrowRight className="w-3 h-3" />
+            </span>
+          ) : isOngoing ? (
+            <span className="bg-white/25 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold border border-white/30">
+              Xem bracket →
+            </span>
+          ) : null}
+        </div>
+
+        {/* Carousel indicator */}
+        {!single && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {Array.from({ length: total }).map((_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  'h-1 rounded-full transition-all',
+                  i === index ? 'w-4 bg-white' : 'w-1 bg-white/40'
+                )}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </Link>
+  )
+}
+
+function NoTournamentBanner() {
+  return (
+    <div className="mt-4 mx-4 rounded-2xl bg-gradient-to-br from-primary-50 via-white to-emerald-50 p-5 text-center border border-primary/10">
+      <Trophy className="w-10 h-10 text-primary/30 mx-auto mb-2" />
+      <p className="text-sm font-semibold text-gray-700">Chưa có giải nào sắp diễn ra</p>
+      <p className="text-xs text-gray-500 mt-1">Đợi admin tạo giải mới nhé!</p>
     </div>
   )
 }
@@ -424,30 +564,28 @@ function StatCard({
   label: string
   value: number
   sub: string
-  accent: 'red' | 'primary' | 'gray'
+  accent: 'red' | 'primary' | 'gray' | 'indigo'
 }) {
   const colors = {
-    red: 'border-red-200 bg-red-50',
-    primary: 'border-primary/20 bg-primary/5',
-    gray: 'border-gray-200 bg-white',
-  }
-  const numColors = {
-    red: 'text-red-600',
-    primary: 'text-primary',
-    gray: 'text-gray-700',
+    red: 'bg-rose-50 text-rose-600 border-rose-100',
+    primary: 'bg-emerald-50 text-primary border-primary/10',
+    gray: 'bg-gray-50 text-gray-600 border-gray-100',
+    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
   }
   return (
     <Link
       to={to}
       className={cn(
-        'rounded-xl p-3 border block hover:shadow-sm transition-shadow',
+        'rounded-2xl p-3 border block hover:shadow-md transition-all relative overflow-hidden',
         colors[accent]
       )}
     >
-      <Icon className={cn('w-4 h-4 mb-1', numColors[accent])} />
-      <div className={cn('text-2xl font-bold leading-none', numColors[accent])}>{value}</div>
-      <div className="text-[10px] text-gray-500 mt-1 uppercase tracking-wide">{label}</div>
-      <div className="text-[10px] text-gray-400">{sub}</div>
+      <Icon className="w-4 h-4 mb-1 opacity-80" />
+      <div className="text-2xl font-bold leading-none">{value}</div>
+      <div className="text-[10px] mt-1 opacity-70 uppercase tracking-wide font-semibold">
+        {label}
+      </div>
+      <div className="text-[10px] opacity-60 mt-0.5">{sub}</div>
     </Link>
   )
 }
@@ -464,10 +602,10 @@ function QuickAction({
   return (
     <Link
       to={to}
-      className="bg-white border border-gray-200 rounded-lg p-2 flex flex-col items-center gap-1 hover:border-primary hover:text-primary text-gray-700"
+      className="bg-white border border-primary/20 rounded-xl p-2.5 flex flex-col items-center gap-1 hover:border-primary hover:bg-primary/5 text-primary transition-colors shadow-sm"
     >
       <Icon className="w-4 h-4" />
-      <span className="text-[11px] font-medium">{label}</span>
+      <span className="text-[11px] font-bold">{label}</span>
     </Link>
   )
 }
@@ -484,18 +622,21 @@ function Section({
   loading?: boolean
 }) {
   return (
-    <div className="mt-5 px-4">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-bold text-gray-700">{title}</h2>
+    <div className="mt-6 px-4">
+      <div className="flex items-center justify-between mb-2.5">
+        <h2 className="text-sm font-bold text-gray-800">{title}</h2>
         {href && (
-          <Link to={href} className="text-xs text-primary flex items-center gap-0.5">
+          <Link
+            to={href}
+            className="text-xs text-primary font-semibold flex items-center gap-0.5"
+          >
             Xem tất cả <ChevronRight className="w-3 h-3" />
           </Link>
         )}
       </div>
       <div className="space-y-2">
         {loading ? (
-          <div className="bg-white rounded-xl p-4 animate-pulse">
+          <div className="bg-white rounded-2xl p-4 animate-pulse shadow-sm">
             <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
             <div className="h-2 bg-gray-100 rounded w-1/2" />
           </div>
@@ -508,7 +649,11 @@ function Section({
 }
 
 function Empty({ text }: { text: string }) {
-  return <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">{text}</div>
+  return (
+    <div className="bg-white rounded-2xl p-5 text-center text-xs text-gray-400 shadow-sm">
+      {text}
+    </div>
+  )
 }
 
 function timeAgo(iso: string) {

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Users, ClipboardList, Trophy, Settings } from 'lucide-react'
+import { Home, Users, ClipboardList, CalendarDays, Settings } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useAuth } from '../../hooks/useAuth'
 
@@ -7,7 +7,7 @@ const baseTabs = [
   { to: '/home', label: 'Trang chính', icon: Home },
   { to: '/members', label: 'Thành viên', icon: Users },
   { to: '/surveys', label: 'Khảo sát', icon: ClipboardList },
-  { to: '/tournaments', label: 'Giải đấu', icon: Trophy },
+  { to: '/events', label: 'Sự kiện', icon: CalendarDays },
 ]
 
 export function BottomNav() {

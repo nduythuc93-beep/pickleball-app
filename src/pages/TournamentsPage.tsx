@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { TopBar } from '../components/layout/TopBar'
 import { TournamentCard } from '../components/tournaments/TournamentCard'
 import { supabase } from '../lib/supabase'
 import { cn } from '../lib/cn'
@@ -52,8 +51,6 @@ export function TournamentsPage() {
 
   return (
     <div>
-      <TopBar title="Giải đấu" />
-
       <nav className="bg-white border-b border-gray-200 grid grid-cols-2">
         {(['active', 'completed'] as Tab[]).map((t) => (
           <button

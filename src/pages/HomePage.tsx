@@ -19,9 +19,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SkillBadge } from '../components/members/SkillBadge'
+import { SessionCard } from '../components/sessions/SessionCard'
 import { cn } from '../lib/cn'
 import type {
+  ActivityType,
   Member,
+  PlaySession,
+  SessionCheckin,
   Survey,
   Tournament,
   TournamentMatch,
@@ -74,14 +78,18 @@ export function HomePage() {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [myResponded, setMyResponded] = useState<Set<string>>(new Set())
   const [myRegistrations, setMyRegistrations] = useState<Set<string>>(new Set())
-  const [totalMembers, setTotalMembers] = useState(0)
   const [topScorers, setTopScorers] = useState<Scorer[]>([])
   const [activity, setActivity] = useState<ActivityItem[]>([])
+  const [todaySessions, setTodaySessions] = useState<PlaySession[]>([])
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
+  const [sessionCheckinCounts, setSessionCheckinCounts] = useState<Record<string, number>>({})
+  const [mySessionCheckins, setMySessionCheckins] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let mounted = true
     async function load() {
       if (!me) return
+      const today = new Date().toISOString().slice(0, 10)
       const [
         { data: t },
         { data: s },
@@ -90,6 +98,10 @@ export function HomePage() {
         { data: regs },
         { data: myResps },
         { data: myRegs },
+        { data: todaySess },
+        { data: at },
+        { data: sessCi },
+        { data: mySessCi },
       ] = await Promise.all([
         supabase
           .from('tournaments')
@@ -128,12 +140,29 @@ export function HomePage() {
           .select('tournament_id')
           .eq('member_id', me.id)
           .neq('status', 'withdrawn'),
+        supabase
+          .from('play_sessions')
+          .select('*')
+          .eq('session_date', today)
+          .neq('status', 'cancelled')
+          .order('start_time'),
+        supabase.from('activity_types').select('*').order('display_order'),
+        supabase.from('session_checkins').select('session_id'),
+        supabase.from('session_checkins').select('session_id').eq('member_id', me.id),
       ])
       if (!mounted) return
 
       setTournaments((t ?? []) as Tournament[])
       setSurveys((s ?? []) as Survey[])
-      setTotalMembers(memberCount ?? 0)
+      void memberCount
+      setTodaySessions((todaySess ?? []) as PlaySession[])
+      setActivityTypes((at ?? []) as ActivityType[])
+      const sessCounts: Record<string, number> = {}
+      for (const c of (sessCi ?? []) as Array<Pick<SessionCheckin, 'session_id'>>) {
+        sessCounts[c.session_id] = (sessCounts[c.session_id] ?? 0) + 1
+      }
+      setSessionCheckinCounts(sessCounts)
+      setMySessionCheckins(new Set((mySessCi ?? []).map((r) => r.session_id as string)))
       setMyResponded(new Set((myResps ?? []).map((r) => r.survey_id as string)))
       setMyRegistrations(
         new Set((myRegs ?? []).map((r) => r.tournament_id as string))
@@ -231,6 +260,35 @@ export function HomePage() {
         </button>
       </div>
 
+      {/* Buổi đánh hôm nay — TOP priority */}
+      {todaySessions.length > 0 && (
+        <div className="px-4 pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Buổi đánh hôm nay
+            </h2>
+            <Link to="/events" className="text-xs text-primary font-semibold">
+              Xem tất cả →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {todaySessions.map((s) => {
+              const at = activityTypes.find((a) => a.key === s.activity_type)
+              return (
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  activityType={at}
+                  checkinCount={sessionCheckinCounts[s.id] ?? 0}
+                  hasCheckedIn={mySessionCheckins.has(s.id)}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Hero Banner: Featured tournaments */}
       {featuredTournaments.length > 0 ? (
         <div className="pt-4">
@@ -283,12 +341,12 @@ export function HomePage() {
           sub="đang/sắp"
         />
         <StatCard
-          to="/members"
-          icon={Users}
-          label="Thành viên"
-          value={totalMembers}
+          to={`/members/${me.id}`}
+          icon={Award}
+          label="Điểm của bạn"
+          value={me.total_points ?? 0}
           accent="indigo"
-          sub="active"
+          sub="tích luỹ"
         />
       </div>
 

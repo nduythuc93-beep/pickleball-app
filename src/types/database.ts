@@ -15,6 +15,7 @@ export type Member = {
   is_coach: boolean
   is_host: boolean
   is_active: boolean
+  total_points: number
   joined_at: string
   created_by: string | null
   updated_at: string
@@ -83,6 +84,71 @@ export type TournamentRegistration = {
   status: 'pending' | 'confirmed' | 'withdrawn'
   is_mirror: boolean
   registered_at: string
+}
+
+// ========================================
+// SOCIAL PLAY SESSIONS
+// ========================================
+
+export type ActivityTypeKey = 'social' | 'training' | 'ball_machine'
+
+export type ActivityType = {
+  key: ActivityTypeKey
+  label: string
+  default_price_vnd: number
+  default_points: number
+  color: string | null
+  icon: string | null
+  requires_instructor: boolean
+  display_order: number
+}
+
+export type SessionSchedule = {
+  id: string
+  activity_type: ActivityTypeKey
+  day_of_week: number // 1=Mon, 7=Sun
+  start_time: string // 'HH:MM:SS'
+  end_time: string
+  venue: string
+  max_attendees: number
+  price_vnd: number | null
+  points_award: number | null
+  instructor_name: string | null
+  notes: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type SessionStatus = 'open' | 'ongoing' | 'completed' | 'cancelled'
+
+export type PlaySession = {
+  id: string
+  activity_type: ActivityTypeKey
+  session_date: string // 'YYYY-MM-DD'
+  start_time: string
+  end_time: string
+  venue: string
+  max_attendees: number
+  price_vnd: number
+  points_award: number
+  instructor_name: string | null
+  status: SessionStatus
+  notes: string | null
+  schedule_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type SessionCheckin = {
+  id: string
+  session_id: string
+  member_id: string
+  checked_in_at: string
+  points_awarded: number
+  is_paid: boolean
+  paid_at: string | null
+  paid_marked_by: string | null
+  checked_in_by: string | null
 }
 
 export type TournamentMatch = {

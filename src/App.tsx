@@ -11,6 +11,8 @@ import { SurveysPage } from './pages/SurveysPage'
 import { SurveyDetailPage } from './pages/SurveyDetailPage'
 import { TournamentsPage } from './pages/TournamentsPage'
 import { TournamentDetailPage } from './pages/TournamentDetailPage'
+import { EventsPage } from './pages/EventsPage'
+import { SessionDetailPage } from './pages/SessionDetailPage'
 import { AdminPage } from './pages/AdminPage'
 
 function App() {
@@ -27,8 +29,10 @@ function App() {
               <Route path="/members/:id" element={<MemberDetailPage />} />
               <Route path="/surveys" element={<SurveysPage />} />
               <Route path="/surveys/:id" element={<SurveyDetailPage />} />
+              <Route path="/events" element={<EventsPage />} />
               <Route path="/tournaments" element={<TournamentsPage />} />
               <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
+              <Route path="/sessions/:id" element={<SessionDetailPage />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute adminOnly />}>

@@ -10,15 +10,17 @@ import { SurveyFormModal } from '../components/surveys/SurveyFormModal'
 import { SurveyResponsesModal } from '../components/surveys/SurveyResponsesModal'
 import { TournamentFormModal } from '../components/tournaments/TournamentFormModal'
 import { TournamentCard } from '../components/tournaments/TournamentCard'
+import { AdminSessionsTab } from '../components/sessions/AdminSessionsTab'
 import { Button } from '../components/ui/Button'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { cn } from '../lib/cn'
 import type { Member, Survey, Tournament } from '../types/database'
 
-type Tab = 'members' | 'surveys' | 'tournaments'
+type Tab = 'members' | 'surveys' | 'sessions' | 'tournaments'
 const TABS: Array<{ key: Tab; label: string }> = [
   { key: 'members', label: 'Thành viên' },
+  { key: 'sessions', label: 'Đánh tập' },
   { key: 'surveys', label: 'Khảo sát' },
   { key: 'tournaments', label: 'Giải đấu' },
 ]
@@ -47,6 +49,7 @@ export function AdminPage() {
       </nav>
 
       {tab === 'members' && <MembersAdminTab />}
+      {tab === 'sessions' && <AdminSessionsTab />}
       {tab === 'surveys' && <SurveysAdminTab />}
       {tab === 'tournaments' && <TournamentsAdminTab />}
     </div>

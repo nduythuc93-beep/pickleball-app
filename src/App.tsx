@@ -9,6 +9,7 @@ import { MemberDetailPage } from './pages/MemberDetailPage'
 import { SurveysPage } from './pages/SurveysPage'
 import { SurveyDetailPage } from './pages/SurveyDetailPage'
 import { TournamentsPage } from './pages/TournamentsPage'
+import { TournamentDetailPage } from './pages/TournamentDetailPage'
 import { AdminPage } from './pages/AdminPage'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
               <Route path="/surveys" element={<SurveysPage />} />
               <Route path="/surveys/:id" element={<SurveyDetailPage />} />
               <Route path="/tournaments" element={<TournamentsPage />} />
+              <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute adminOnly />}>

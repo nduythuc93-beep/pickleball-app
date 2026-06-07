@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage'
 import { MembersPage } from './pages/MembersPage'
 import { MemberDetailPage } from './pages/MemberDetailPage'
 import { SurveysPage } from './pages/SurveysPage'
+import { SurveyDetailPage } from './pages/SurveyDetailPage'
 import { TournamentsPage } from './pages/TournamentsPage'
 import { AdminPage } from './pages/AdminPage'
 
@@ -22,6 +23,7 @@ function App() {
               <Route path="/members" element={<MembersPage />} />
               <Route path="/members/:id" element={<MemberDetailPage />} />
               <Route path="/surveys" element={<SurveysPage />} />
+              <Route path="/surveys/:id" element={<SurveyDetailPage />} />
               <Route path="/tournaments" element={<TournamentsPage />} />
             </Route>
           </Route>

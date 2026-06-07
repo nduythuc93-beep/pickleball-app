@@ -66,10 +66,12 @@ export async function uploadAvatar(memberId: string, file: File): Promise<{
   const path = `${memberId}/${ts}.webp`
 
   // Xoá file cũ trong folder
-  const { data: existing } = await supabase.storage.from(BUCKET).list(memberId)
+  const { data: existing, error: listErr } = await supabase.storage.from(BUCKET).list(memberId)
+  if (listErr) console.warn('[uploadAvatar] list error:', listErr)
   if (existing && existing.length > 0) {
     const toRemove = existing.map((f) => `${memberId}/${f.name}`)
-    await supabase.storage.from(BUCKET).remove(toRemove)
+    const { error: rmErr } = await supabase.storage.from(BUCKET).remove(toRemove)
+    if (rmErr) console.warn('[uploadAvatar] remove old error:', rmErr)
   }
 
   const { error: upErr } = await supabase.storage
@@ -79,7 +81,10 @@ export async function uploadAvatar(memberId: string, file: File): Promise<{
       cacheControl: '3600',
       upsert: true,
     })
-  if (upErr) throw upErr
+  if (upErr) {
+    console.error('[uploadAvatar] storage upload failed:', upErr, { path, memberId })
+    throw new Error(`Upload thất bại: ${upErr.message}`)
+  }
 
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
   const updatedAt = new Date().toISOString()
@@ -88,7 +93,10 @@ export async function uploadAvatar(memberId: string, file: File): Promise<{
     .from('members')
     .update({ avatar_url: pub.publicUrl, avatar_updated_at: updatedAt })
     .eq('id', memberId)
-  if (dbErr) throw dbErr
+  if (dbErr) {
+    console.error('[uploadAvatar] db update failed:', dbErr, { memberId })
+    throw new Error(`Lưu avatar URL thất bại: ${dbErr.message}`)
+  }
 
   return { url: pub.publicUrl, updatedAt }
 }

@@ -16,7 +16,7 @@ import type { Member, SkillLevel } from '../types/database'
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { member: me, isAdmin, refreshMember } = useAuth()
+  const { member: me, user, isAdmin, refreshMember } = useAuth()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [member, setMember] = useState<Member | null>(null)
@@ -65,27 +65,29 @@ export function MemberDetailPage() {
   async function onSave() {
     if (!member) return
     setSaving(true)
-    const updates: Partial<Member> = {
+    const updates: Record<string, unknown> = {
       bio: bio.trim() || null,
       phone: phone.trim() || null,
       zalo_id: zaloId.trim() || null,
     }
     if (canEditSkill && skillLevel !== member.skill_level) {
       updates.skill_level = skillLevel
-      updates.skill_updated_by = me?.user_id ?? null
+      updates.skill_updated_by = user?.id ?? null
       updates.skill_updated_at = new Date().toISOString()
     }
+    console.log('[MemberDetailPage] UPDATE payload:', { id: member.id, updates })
     const { error } = await supabase
       .from('members')
       .update(updates)
       .eq('id', member.id)
     setSaving(false)
     if (error) {
+      console.error('[MemberDetailPage] UPDATE error:', error)
       toast.error(friendlyError(error))
       return
     }
     toast.success('Đã lưu')
-    setMember({ ...member, ...updates })
+    setMember({ ...member, ...(updates as Partial<Member>) })
     if (isOwn) await refreshMember()
   }
 

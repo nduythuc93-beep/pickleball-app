@@ -24,6 +24,7 @@ import {
   formatTime,
   formatVnd,
   getCheckinWindow,
+  getCancelWindow,
 } from '../lib/sessions'
 import { cn } from '../lib/cn'
 import type {
@@ -40,7 +41,7 @@ type CheckinRow = SessionCheckin & {
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { member: me, user, isAdmin } = useAuth()
+  const { member: me, user, isAdmin, refreshMember } = useAuth()
 
   const [session, setSession] = useState<PlaySession | null>(null)
   const [activityType, setActivityType] = useState<ActivityType | null>(null)
@@ -90,6 +91,7 @@ export function SessionDetailPage() {
     [checkins, me]
   )
   const window = useMemo(() => (session ? getCheckinWindow(session) : null), [session])
+  const cancelWindow = useMemo(() => (session ? getCancelWindow(session) : null), [session])
   const isFull = useMemo(
     () => session ? checkins.length >= session.max_attendees : false,
     [checkins, session]
@@ -136,14 +138,32 @@ export function SessionDetailPage() {
   }
 
   async function onCancelMyCheckin() {
-    if (!myCheckin) return
-    if (!confirm('Huỷ check-in? Điểm sẽ giữ lại nhưng admin có thể recompute.')) return
-    const { error } = await supabase.from('session_checkins').delete().eq('id', myCheckin.id)
+    if (!myCheckin || !cancelWindow) return
+    if (!cancelWindow.canCancel) {
+      toast.error(cancelWindow.reason ?? 'Không thể huỷ')
+      return
+    }
+    const msg = cancelWindow.withPenalty
+      ? '⚠️ Huỷ sát giờ (< 3h trước session) — bạn sẽ bị TRỪ 5 điểm (nếu có). Tiếp tục?'
+      : 'Huỷ check-in?'
+    if (!confirm(msg)) return
+
+    const { data, error } = await supabase.rpc('cancel_my_checkin', {
+      p_checkin_id: myCheckin.id,
+    })
     if (error) {
       toast.error(friendlyError(error))
       return
     }
-    toast.success('Đã huỷ check-in')
+    const penalty = (data as { penalty?: number } | null)?.penalty ?? 0
+    if (penalty > 0) {
+      toast.error(`Đã huỷ — bị trừ ${penalty} điểm`, { duration: 4000 })
+    } else if (cancelWindow.withPenalty) {
+      toast.success('Đã huỷ — không bị trừ vì điểm của bạn = 0')
+    } else {
+      toast.success('Đã huỷ check-in')
+    }
+    await refreshMember()
     load()
   }
 
@@ -284,13 +304,26 @@ export function SessionDetailPage() {
               {new Date(myCheckin.checked_in_at).toLocaleString('vi-VN')}
               {myCheckin.points_awarded > 0 && ` · +${myCheckin.points_awarded}đ`}
             </p>
-            {window?.canCheckIn && (
-              <button
-                onClick={onCancelMyCheckin}
-                className="mt-2 text-xs text-red-600 underline"
-              >
-                Huỷ check-in
-              </button>
+            {cancelWindow?.canCancel && (
+              <>
+                <button
+                  onClick={onCancelMyCheckin}
+                  className={cn(
+                    'mt-2 text-xs underline',
+                    cancelWindow.withPenalty ? 'text-amber-700 font-semibold' : 'text-red-600'
+                  )}
+                >
+                  {cancelWindow.withPenalty ? '⚠️ Huỷ check-in (sẽ trừ 5đ)' : 'Huỷ check-in'}
+                </button>
+                {cancelWindow.withPenalty && (
+                  <p className="text-[10px] text-amber-600 mt-1">
+                    Sát giờ {'<'} 3h. Huỷ tự do trước đó.
+                  </p>
+                )}
+              </>
+            )}
+            {!cancelWindow?.canCancel && (
+              <p className="text-[10px] text-gray-500 mt-2">{cancelWindow?.reason}</p>
             )}
           </div>
         ) : session.status === 'cancelled' ? (

@@ -36,8 +36,9 @@ export function formatDateFull(dateIso: string): string {
 }
 
 /**
- * Check-in window: mở từ 1h trước session.start_time đến 1h sau session.end_time.
- * Trả về { canCheckIn, reason } để UI biết hiển thị gì.
+ * Check-in window:
+ * - Mở: 7 NGÀY trước session.start_time
+ * - Đóng: 1h sau session.end_time
  */
 export function getCheckinWindow(session: PlaySession): {
   canCheckIn: boolean
@@ -45,16 +46,16 @@ export function getCheckinWindow(session: PlaySession): {
   status: 'before' | 'open' | 'after'
 } {
   const now = new Date()
-  const sessionDate = session.session_date // 'YYYY-MM-DD'
+  const sessionDate = session.session_date
   const start = new Date(`${sessionDate}T${session.start_time}`)
   const end = new Date(`${sessionDate}T${session.end_time}`)
-  const openAt = new Date(start.getTime() - 60 * 60 * 1000) // -1h
+  const openAt = new Date(start.getTime() - 7 * 24 * 60 * 60 * 1000) // -7 days
   const closeAt = new Date(end.getTime() + 60 * 60 * 1000) // +1h
 
   if (now < openAt) {
     return {
       canCheckIn: false,
-      reason: `Check-in mở lúc ${openAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+      reason: `Check-in mở từ ${openAt.toLocaleDateString('vi-VN')}`,
       status: 'before',
     }
   }
@@ -62,6 +63,35 @@ export function getCheckinWindow(session: PlaySession): {
     return { canCheckIn: false, reason: 'Check-in đã đóng', status: 'after' }
   }
   return { canCheckIn: true, status: 'open' }
+}
+
+/**
+ * Cancel window:
+ * - Free cancel: now < session.start_time - 3h
+ * - Penalty cancel (-5đ): session.start - 3h < now < session.end
+ * - No cancel: now > session.end
+ */
+export function getCancelWindow(session: PlaySession): {
+  canCancel: boolean
+  withPenalty: boolean
+  reason?: string
+} {
+  const now = new Date()
+  const start = new Date(`${session.session_date}T${session.start_time}`)
+  const end = new Date(`${session.session_date}T${session.end_time}`)
+  const penaltyThreshold = new Date(start.getTime() - 3 * 60 * 60 * 1000)
+
+  if (now > end) {
+    return { canCancel: false, withPenalty: false, reason: 'Buổi đã qua, không huỷ được' }
+  }
+  if (now > penaltyThreshold) {
+    return {
+      canCancel: true,
+      withPenalty: true,
+      reason: 'Huỷ sát giờ — sẽ bị trừ 5 điểm (nếu có)',
+    }
+  }
+  return { canCancel: true, withPenalty: false }
 }
 
 export const ACTIVITY_STYLE: Record<

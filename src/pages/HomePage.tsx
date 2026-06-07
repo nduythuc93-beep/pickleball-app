@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SkillBadge } from '../components/members/SkillBadge'
-import { SessionCard } from '../components/sessions/SessionCard'
+import { SessionCardHero, SessionCardMini } from '../components/sessions/SessionCard'
 import { cn } from '../lib/cn'
 import type {
   ActivityType,
@@ -273,18 +273,34 @@ export function HomePage() {
             </Link>
           </div>
           <div className="space-y-2">
-            {todaySessions.map((s) => {
-              const at = activityTypes.find((a) => a.key === s.activity_type)
-              return (
-                <SessionCard
+            {/* Social hero */}
+            {todaySessions
+              .filter((s) => s.activity_type === 'social')
+              .map((s) => (
+                <SessionCardHero
                   key={s.id}
                   session={s}
-                  activityType={at}
+                  activityType={activityTypes.find((a) => a.key === s.activity_type)}
                   checkinCount={sessionCheckinCounts[s.id] ?? 0}
                   hasCheckedIn={mySessionCheckins.has(s.id)}
                 />
-              )
-            })}
+              ))}
+            {/* Training + Ball machine compact 2-col */}
+            {todaySessions.filter((s) => s.activity_type !== 'social').length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {todaySessions
+                  .filter((s) => s.activity_type !== 'social')
+                  .map((s) => (
+                    <SessionCardMini
+                      key={s.id}
+                      session={s}
+                      activityType={activityTypes.find((a) => a.key === s.activity_type)}
+                      checkinCount={sessionCheckinCounts[s.id] ?? 0}
+                      hasCheckedIn={mySessionCheckins.has(s.id)}
+                    />
+                  ))}
+              </div>
+            )}
           </div>
         </div>
       )}

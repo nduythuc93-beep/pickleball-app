@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Calendar } from 'lucide-react'
-import { SessionCard } from '../components/sessions/SessionCard'
+import { SessionCard, SessionCardHero, SessionCardMini } from '../components/sessions/SessionCard'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { cn } from '../lib/cn'
@@ -138,18 +138,27 @@ export function SessionsPage() {
           groupedByDate.map(([date, list]) => {
             const isToday = date === new Date().toISOString().slice(0, 10)
             const isPast = date < new Date().toISOString().slice(0, 10)
+            // Tách Social ra trước (hero), còn lại render mini
+            const socialSessions = list.filter((s) => s.activity_type === 'social')
+            const otherSessions = list.filter((s) => s.activity_type !== 'social')
+
             return (
               <div key={date} className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
-                  <h2 className={cn(
-                    'text-xs font-bold uppercase tracking-wider',
-                    isToday ? 'text-primary' : isPast ? 'text-gray-400' : 'text-gray-600'
-                  )}>
-                    {isToday && '★ '}{formatDateFull(date)}
+                  <h2
+                    className={cn(
+                      'text-xs font-bold uppercase tracking-wider',
+                      isToday ? 'text-primary' : isPast ? 'text-gray-400' : 'text-gray-600'
+                    )}
+                  >
+                    {isToday && '★ '}
+                    {formatDateFull(date)}
                   </h2>
                 </div>
-                {list.map((s) => (
-                  <SessionCard
+
+                {/* Hero: Social */}
+                {socialSessions.map((s) => (
+                  <SessionCardHero
                     key={s.id}
                     session={s}
                     activityType={atByKey.get(s.activity_type)}
@@ -157,6 +166,34 @@ export function SessionsPage() {
                     hasCheckedIn={myCheckins.has(s.id)}
                   />
                 ))}
+
+                {/* Mini grid: Training + Ball machine 2-col */}
+                {otherSessions.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {otherSessions.map((s) => (
+                      <SessionCardMini
+                        key={s.id}
+                        session={s}
+                        activityType={atByKey.get(s.activity_type)}
+                        checkinCount={checkinCounts[s.id] ?? 0}
+                        hasCheckedIn={myCheckins.has(s.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Fallback: nếu chỉ có Social hoặc cấu trúc khác — em vẫn handle */}
+                {socialSessions.length === 0 &&
+                  otherSessions.length === 0 &&
+                  list.map((s) => (
+                    <SessionCard
+                      key={s.id}
+                      session={s}
+                      activityType={atByKey.get(s.activity_type)}
+                      checkinCount={checkinCounts[s.id] ?? 0}
+                      hasCheckedIn={myCheckins.has(s.id)}
+                    />
+                  ))}
               </div>
             )
           })}

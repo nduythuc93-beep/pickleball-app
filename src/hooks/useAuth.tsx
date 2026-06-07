@@ -30,22 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('user_id', userId)
       .maybeSingle()
-    if (data) {
-      setMember(data as Member)
+    const m = data as Member | null
+    // Block inactive members — coi như chưa link
+    if (m && !m.is_active) {
+      setMember(null)
       return
     }
-    // Fallback: lookup theo email
-    const { data: u } = await supabase.auth.getUser()
-    if (u.user?.email) {
-      const { data: byEmail } = await supabase
-        .from('members')
-        .select('*')
-        .ilike('email', u.user.email)
-        .maybeSingle()
-      setMember((byEmail as Member) ?? null)
-      return
-    }
-    setMember(null)
+    setMember(m)
   }
 
   useEffect(() => {

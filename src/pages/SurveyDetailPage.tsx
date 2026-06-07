@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import { friendlyError } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
 import { FieldRenderer } from '../components/surveys/FieldRenderer'
 import { Button } from '../components/ui/Button'
@@ -90,7 +91,7 @@ export function SurveyDetailPage() {
     })
     setSubmitting(false)
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success('Đã gửi khảo sát')

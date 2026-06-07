@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Camera, Trash2, Phone, MessageCircle, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import { friendlyError } from '../lib/errors'
 import { uploadAvatar, removeAvatar } from '../lib/storage'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
@@ -44,7 +45,7 @@ export function MemberDetailPage() {
         .maybeSingle()
       if (!mounted) return
       if (error) {
-        toast.error(error.message)
+        toast.error(friendlyError(error))
       } else if (data) {
         const m = data as Member
         setMember(m)
@@ -80,7 +81,7 @@ export function MemberDetailPage() {
       .eq('id', member.id)
     setSaving(false)
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success('Đã lưu')
@@ -98,7 +99,7 @@ export function MemberDetailPage() {
       toast.success('Đã cập nhật ảnh')
       if (isOwn) await refreshMember()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Upload thất bại')
+      toast.error(friendlyError(err))
     } finally {
       setUploading(false)
       e.target.value = ''
@@ -114,7 +115,7 @@ export function MemberDetailPage() {
       toast.success('Đã xoá ảnh')
       if (isOwn) await refreshMember()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Xoá thất bại')
+      toast.error(friendlyError(err))
     }
   }
 

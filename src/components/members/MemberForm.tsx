@@ -4,6 +4,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { supabase } from '../../lib/supabase'
+import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
 import type { Member, SkillLevel } from '../../types/database'
 
@@ -85,7 +86,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
     setSaving(false)
 
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success(isEdit ? 'Đã cập nhật' : 'Đã thêm thành viên')

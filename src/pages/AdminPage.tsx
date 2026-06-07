@@ -10,6 +10,7 @@ import { SurveyFormModal } from '../components/surveys/SurveyFormModal'
 import { SurveyResponsesModal } from '../components/surveys/SurveyResponsesModal'
 import { Button } from '../components/ui/Button'
 import { supabase } from '../lib/supabase'
+import { friendlyError } from '../lib/errors'
 import { cn } from '../lib/cn'
 import type { Member, Survey } from '../types/database'
 
@@ -74,7 +75,7 @@ function SurveysAdminTab() {
       .select('*')
       .order('created_at', { ascending: false })
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       setSurveys([])
     } else {
       const list = (data ?? []) as Survey[]
@@ -105,7 +106,7 @@ function SurveysAdminTab() {
       .update({ is_open: !s.is_open })
       .eq('id', s.id)
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success(s.is_open ? 'Đã đóng' : 'Đã mở lại')
@@ -116,7 +117,7 @@ function SurveysAdminTab() {
     if (!confirm(`Xoá khảo sát "${s.title}"? (responses cũng bị xoá)`)) return
     const { error } = await supabase.from('surveys').delete().eq('id', s.id)
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success('Đã xoá')
@@ -243,7 +244,7 @@ function MembersAdminTab() {
       .select('*')
       .order('full_name', { ascending: true })
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       setMembers([])
     } else {
       setMembers((data ?? []) as Member[])
@@ -279,7 +280,7 @@ function MembersAdminTab() {
       .update({ is_active: newState })
       .eq('id', m.id)
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success(`Đã ${verb}`)

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { supabase } from '../../lib/supabase'
+import { friendlyError } from '../../lib/errors'
 import { downloadCSV, toCSV } from '../../lib/csv'
 import type { Member, Survey, SurveyResponse } from '../../types/database'
 
@@ -34,7 +35,7 @@ export function SurveyResponsesModal({ open, onClose, survey }: Props) {
         .order('submitted_at', { ascending: false })
       if (!mounted) return
       if (error) {
-        toast.error(error.message)
+        toast.error(friendlyError(error))
         setRows([])
       } else {
         setRows(

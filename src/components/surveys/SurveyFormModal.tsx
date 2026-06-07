@@ -4,6 +4,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { supabase } from '../../lib/supabase'
+import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
 import { SURVEY_TEMPLATES, type TemplateKey } from '../../lib/surveyTemplates'
 import { cn } from '../../lib/cn'
@@ -85,7 +86,7 @@ export function SurveyFormModal({ open, onClose, survey, onSaved }: Props) {
 
     setSaving(false)
     if (error) {
-      toast.error(error.message)
+      toast.error(friendlyError(error))
       return
     }
     toast.success(isEdit ? 'Đã cập nhật' : 'Đã tạo khảo sát')

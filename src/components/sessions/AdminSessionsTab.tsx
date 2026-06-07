@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Calendar, Sparkles, Trash2 } from 'lucide-react'
+import { Calendar, Sparkles, Trash2, Pencil, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../ui/Button'
 import { SessionCard } from './SessionCard'
+import { SessionFormModal } from './SessionFormModal'
 import {
   ACTIVITY_STYLE,
   DAY_LABELS_LONG,
@@ -29,6 +30,8 @@ export function AdminSessionsTab() {
   const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<PlaySession | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -161,10 +164,21 @@ export function AdminSessionsTab() {
       <div className="p-4 bg-white border-b border-gray-100 space-y-2">
         <Button onClick={generateNextWeek} loading={generating} className="w-full">
           <Sparkles className="w-4 h-4 mr-1" />
-          Sinh session 14 ngày tới (gồm hôm nay)
+          Sinh session 14 ngày tới (auto)
+        </Button>
+        <Button
+          onClick={() => {
+            setEditing(null)
+            setFormOpen(true)
+          }}
+          variant="secondary"
+          className="w-full"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          Tạo session thủ công
         </Button>
         <p className="text-xs text-gray-500 text-center">
-          Tạo session dựa trên lịch định kỳ active. Idempotent: bấm nhiều lần không tạo trùng.
+          Auto: theo lịch định kỳ T2/T4/T6 · Thủ công: tạo buổi đặc biệt bất kỳ ngày
         </p>
       </div>
 
@@ -236,10 +250,19 @@ export function AdminSessionsTab() {
                 activityType={atByKey.get(s.activity_type)}
                 checkinCount={checkinCounts[s.id] ?? 0}
               />
-              <div className="flex gap-2 px-2">
+              <div className="flex gap-2 px-1">
+                <button
+                  onClick={() => {
+                    setEditing(s)
+                    setFormOpen(true)
+                  }}
+                  className="flex-1 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center justify-center gap-1"
+                >
+                  <Pencil className="w-3 h-3" /> Sửa
+                </button>
                 <button
                   onClick={() => deleteSession(s)}
-                  className="text-xs text-red-600 flex items-center gap-1"
+                  className="py-1.5 px-3 text-xs font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center gap-1"
                 >
                   <Trash2 className="w-3 h-3" /> Xoá
                 </button>
@@ -248,6 +271,14 @@ export function AdminSessionsTab() {
           ))}
         </div>
       </div>
+
+      <SessionFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        session={editing}
+        activityTypes={activityTypes}
+        onSaved={load}
+      />
     </div>
   )
 }

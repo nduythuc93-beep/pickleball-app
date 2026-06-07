@@ -75,7 +75,6 @@ export function MemberDetailPage() {
       updates.skill_updated_by = user?.id ?? null
       updates.skill_updated_at = new Date().toISOString()
     }
-    console.log('[MemberDetailPage] UPDATE payload:', { id: member.id, updates })
     const { error } = await supabase
       .from('members')
       .update(updates)

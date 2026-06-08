@@ -5,6 +5,8 @@ import { Layout } from './components/layout/Layout'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
+import { RewardsPage } from './pages/RewardsPage'
+import { RedemptionsPage } from './pages/RedemptionsPage'
 import { HomePage } from './pages/HomePage'
 import { MembersPage } from './pages/MembersPage'
 import { MemberDetailPage } from './pages/MemberDetailPage'
@@ -35,6 +37,8 @@ function App() {
               <Route path="/tournaments" element={<TournamentsPage />} />
               <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
               <Route path="/sessions/:id" element={<SessionDetailPage />} />
+              <Route path="/rewards" element={<RewardsPage />} />
+              <Route path="/redemptions" element={<RedemptionsPage />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute adminOnly />}>

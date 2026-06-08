@@ -187,6 +187,89 @@ export async function uploadTournamentBanner(
   return { url: pub.publicUrl, updatedAt }
 }
 
+// ========================================
+// REWARD IMAGE
+// ========================================
+
+const REWARD_W = 600
+const REWARD_H = 600
+
+async function resizeRewardWebp(file: File): Promise<Blob> {
+  const img = await fileToImage(file)
+  const canvas = document.createElement('canvas')
+  canvas.width = REWARD_W
+  canvas.height = REWARD_H
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Không lấy được canvas context')
+
+  // Cover fit square center crop
+  const scale = Math.max(REWARD_W / img.width, REWARD_H / img.height)
+  const w = img.width * scale
+  const h = img.height * scale
+  const dx = (REWARD_W - w) / 2
+  const dy = (REWARD_H - h) / 2
+  ctx.drawImage(img, dx, dy, w, h)
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Convert webp thất bại'))),
+      'image/webp',
+      QUALITY
+    )
+  })
+}
+
+export async function uploadRewardImage(
+  rewardId: string,
+  file: File
+): Promise<{ url: string; updatedAt: string }> {
+  if (file.size > 5 * 1024 * 1024) throw new Error('Ảnh tối đa 5MB')
+  if (!/^image\/(jpe?g|png|webp)$/i.test(file.type))
+    throw new Error('Chỉ chấp nhận JPG, PNG, WEBP')
+
+  const blob = await resizeRewardWebp(file)
+  const ts = Date.now()
+  const folder = `rewards/${rewardId}`
+  const path = `${folder}/${ts}.webp`
+
+  const { data: existing } = await supabase.storage.from(BUCKET).list(folder)
+  if (existing && existing.length > 0) {
+    const toRemove = existing.map((f) => `${folder}/${f.name}`)
+    await supabase.storage.from(BUCKET).remove(toRemove)
+  }
+
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, blob, {
+    contentType: 'image/webp',
+    cacheControl: '3600',
+    upsert: true,
+  })
+  if (upErr) throw new Error(`Upload thất bại: ${upErr.message}`)
+
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  const updatedAt = new Date().toISOString()
+
+  const { error: dbErr } = await supabase
+    .from('rewards')
+    .update({ image_url: pub.publicUrl, image_updated_at: updatedAt })
+    .eq('id', rewardId)
+  if (dbErr) throw new Error(`Lưu reward image URL thất bại: ${dbErr.message}`)
+
+  return { url: pub.publicUrl, updatedAt }
+}
+
+export async function removeRewardImage(rewardId: string) {
+  const folder = `rewards/${rewardId}`
+  const { data: existing } = await supabase.storage.from(BUCKET).list(folder)
+  if (existing && existing.length > 0) {
+    const toRemove = existing.map((f) => `${folder}/${f.name}`)
+    await supabase.storage.from(BUCKET).remove(toRemove)
+  }
+  await supabase
+    .from('rewards')
+    .update({ image_url: null, image_updated_at: new Date().toISOString() })
+    .eq('id', rewardId)
+}
+
 export async function removeTournamentBanner(tournamentId: string) {
   const folder = `tournaments/${tournamentId}`
   const { data: existing } = await supabase.storage.from(BUCKET).list(folder)

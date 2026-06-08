@@ -160,6 +160,41 @@ export type SessionCheckin = {
   checked_in_by: string | null
 }
 
+// ========================================
+// REWARDS
+// ========================================
+
+export type Reward = {
+  id: string
+  name: string
+  description: string | null
+  image_url: string | null
+  image_updated_at: string | null
+  cost_points: number
+  stock: number | null
+  is_active: boolean
+  display_order: number
+  created_by: string | null
+  created_at: string
+}
+
+export type RedemptionStatus = 'pending' | 'delivered' | 'cancelled'
+
+export type RewardRedemption = {
+  id: string
+  reward_id: string | null
+  member_id: string
+  cost_points: number
+  reward_name: string
+  status: RedemptionStatus
+  notes: string | null
+  redeemed_at: string
+  delivered_at: string | null
+  delivered_by: string | null
+  cancelled_at: string | null
+  cancelled_by: string | null
+}
+
 export type TournamentMatch = {
   id: string
   tournament_id: string

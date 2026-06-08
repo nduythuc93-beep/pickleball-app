@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { cn } from '../lib/cn'
-import type { PlayExperience } from '../types/database'
+import type { Gender, PlayExperience } from '../types/database'
 
 const EXPERIENCE_OPTIONS: Array<{
   key: PlayExperience
@@ -28,6 +28,7 @@ export function SignupPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [gender, setGender] = useState<Gender | ''>('')
 
   // Optional (collapsible)
   const [showMore, setShowMore] = useState(false)
@@ -53,6 +54,10 @@ export function SignupPage() {
       toast.error('Mật khẩu tối thiểu 6 ký tự')
       return
     }
+    if (!gender) {
+      toast.error('Chọn giới tính')
+      return
+    }
     setSubmitting(true)
 
     // 1. Tạo member record
@@ -61,6 +66,7 @@ export function SignupPage() {
       p_email: email.trim().toLowerCase(),
       p_phone: phone.trim() || null,
       p_experience: experience,
+      p_gender: gender,
     })
     if (memErr) {
       setSubmitting(false)
@@ -163,6 +169,39 @@ export function SignupPage() {
               autoComplete="new-password"
               minLength={6}
             />
+
+            {/* Gender — required, 2 button */}
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Giới tính *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGender('male')}
+                  className={cn(
+                    'py-2.5 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-center gap-2',
+                    gender === 'male'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 bg-white text-gray-700'
+                  )}
+                >
+                  <span className="text-xl">👨</span> Nam
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGender('female')}
+                  className={cn(
+                    'py-2.5 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-center gap-2',
+                    gender === 'female'
+                      ? 'border-pink-500 bg-pink-50 text-pink-700'
+                      : 'border-gray-200 bg-white text-gray-700'
+                  )}
+                >
+                  <span className="text-xl">👩</span> Nữ
+                </button>
+              </div>
+            </div>
 
             {/* Optional fields collapsible */}
             <button

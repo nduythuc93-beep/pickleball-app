@@ -6,7 +6,7 @@ import { Input } from '../ui/Input'
 import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
-import type { Member, PlayExperience, SkillLevel } from '../../types/database'
+import type { Gender, Member, PlayExperience, SkillLevel } from '../../types/database'
 import { PLAY_EXPERIENCE_LABEL } from '../../types/database'
 
 type Props = {
@@ -31,6 +31,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
   const [bio, setBio] = useState('')
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('C')
   const [experience, setExperience] = useState<PlayExperience | ''>('')
+  const [gender, setGender] = useState<Gender | ''>('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isCoach, setIsCoach] = useState(false)
   const [isHost, setIsHost] = useState(false)
@@ -46,6 +47,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       setBio(member?.bio ?? '')
       setSkillLevel(member?.skill_level ?? 'C')
       setExperience(member?.play_experience ?? '')
+      setGender(member?.gender ?? '')
       setIsAdmin(member?.is_admin ?? false)
       setIsCoach(member?.is_coach ?? false)
       setIsHost(member?.is_host ?? false)
@@ -66,6 +68,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       zalo_id: zaloId.trim() || null,
       bio: bio.trim() || null,
       play_experience: experience || null,
+      gender: gender || null,
       skill_level: skillLevel,
       is_admin: isAdmin,
       is_coach: isCoach,
@@ -144,6 +147,45 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
             onChange={(e) => setZaloId(e.target.value)}
             placeholder="zalo_username"
           />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Giới tính</label>
+          <div className="grid grid-cols-3 gap-1">
+            <button
+              type="button"
+              onClick={() => setGender('')}
+              className={`py-2 rounded-lg text-xs font-medium border ${
+                gender === ''
+                  ? 'bg-gray-200 text-gray-700 border-gray-300'
+                  : 'bg-white text-gray-500 border-gray-200'
+              }`}
+            >
+              —
+            </button>
+            <button
+              type="button"
+              onClick={() => setGender('male')}
+              className={`py-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 ${
+                gender === 'male'
+                  ? 'bg-blue-50 text-blue-700 border-blue-300'
+                  : 'bg-white text-gray-700 border-gray-200'
+              }`}
+            >
+              👨 Nam
+            </button>
+            <button
+              type="button"
+              onClick={() => setGender('female')}
+              className={`py-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 ${
+                gender === 'female'
+                  ? 'bg-pink-50 text-pink-700 border-pink-300'
+                  : 'bg-white text-gray-700 border-gray-200'
+              }`}
+            >
+              👩 Nữ
+            </button>
+          </div>
         </div>
 
         <div className="space-y-1">

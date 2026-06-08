@@ -8,6 +8,13 @@ export const PLAY_EXPERIENCE_LABEL: Record<PlayExperience, string> = {
   over_6m: 'Trên 6 tháng',
 }
 
+export type Gender = 'male' | 'female'
+
+export const GENDER_LABEL: Record<Gender, string> = {
+  male: 'Nam',
+  female: 'Nữ',
+}
+
 export type Member = {
   id: string
   user_id: string | null
@@ -20,6 +27,7 @@ export type Member = {
   zalo_id: string | null
   bio: string | null
   play_experience: PlayExperience | null
+  gender: Gender | null
   is_admin: boolean
   is_coach: boolean
   is_host: boolean

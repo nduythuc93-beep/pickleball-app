@@ -12,7 +12,8 @@ import { RoleBadges } from '../components/members/RoleBadges'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import type { Member, SkillLevel } from '../types/database'
-import { PLAY_EXPERIENCE_LABEL } from '../types/database'
+import { GENDER_LABEL, PLAY_EXPERIENCE_LABEL } from '../types/database'
+import { cn } from '../lib/cn'
 
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -207,22 +208,53 @@ export function MemberDetailPage() {
           </div>
         )}
 
-        {/* Play experience badge */}
-        {member.play_experience && (
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-            <span className="text-2xl">
-              {member.play_experience === 'beginner' && '🌱'}
-              {member.play_experience === 'under_6m' && '🏓'}
-              {member.play_experience === 'over_6m' && '🔥'}
-            </span>
-            <div className="flex-1">
-              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                Kinh nghiệm
-              </p>
-              <p className="text-sm font-semibold text-gray-800">
-                {PLAY_EXPERIENCE_LABEL[member.play_experience]}
-              </p>
-            </div>
+        {/* Gender + Experience badges */}
+        {(member.gender || member.play_experience) && (
+          <div className="grid grid-cols-2 gap-2">
+            {member.gender && (
+              <div
+                className={cn(
+                  'rounded-xl p-3 flex items-center gap-2 border',
+                  member.gender === 'male'
+                    ? 'bg-blue-50 border-blue-100'
+                    : 'bg-pink-50 border-pink-100'
+                )}
+              >
+                <span className="text-xl">
+                  {member.gender === 'male' ? '👨' : '👩'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">
+                    Giới tính
+                  </p>
+                  <p
+                    className={cn(
+                      'text-sm font-semibold truncate',
+                      member.gender === 'male' ? 'text-blue-700' : 'text-pink-700'
+                    )}
+                  >
+                    {GENDER_LABEL[member.gender]}
+                  </p>
+                </div>
+              </div>
+            )}
+            {member.play_experience && (
+              <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-2 border border-gray-100">
+                <span className="text-xl">
+                  {member.play_experience === 'beginner' && '🌱'}
+                  {member.play_experience === 'under_6m' && '🏓'}
+                  {member.play_experience === 'over_6m' && '🔥'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">
+                    Kinh nghiệm
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">
+                    {PLAY_EXPERIENCE_LABEL[member.play_experience]}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -9,7 +9,7 @@ type Props = {
 export function TopBar({ title, subtitle }: Props) {
   const { signOut, member } = useAuth()
   return (
-    <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
       <div className="min-w-0">
         <h1 className="text-lg font-bold text-gray-900 truncate">{title}</h1>
         {subtitle && <p className="text-xs text-gray-500 truncate">{subtitle}</p>}

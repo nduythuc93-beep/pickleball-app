@@ -13,8 +13,8 @@ export function EventsPage() {
     <div>
       <TopBar title="Sự kiện" />
 
-      {/* Segmented pill control */}
-      <div className="bg-white px-4 pt-3 pb-3 border-b border-gray-100">
+      {/* Segmented pill control — sticky bên dưới TopBar */}
+      <div className="sticky top-[57px] z-20 bg-white px-4 pt-3 pb-3 border-b border-gray-100">
         <div className="bg-gray-100 p-1 rounded-xl grid grid-cols-2 gap-1">
           <button
             onClick={() => setTab('sessions')}

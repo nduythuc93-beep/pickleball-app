@@ -75,35 +75,40 @@ export function MembersPage() {
           />
         </div>
 
-        {/* Skill filter */}
-        <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+        {/* Compact filters — 1 row scrollable, có separator giữa skill và role */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider whitespace-nowrap mr-0.5">
+            Skill
+          </span>
           {SKILL_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => setSkillFilter(s)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors',
+                'px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors',
                 skillFilter === s
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-white text-gray-700 border-gray-200'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               )}
             >
-              {s === 'all' ? 'Skill: tất cả' : `Skill ${s}`}
+              {s === 'all' ? 'Tất cả' : s}
             </button>
           ))}
-        </div>
 
-        {/* Role filter */}
-        <div className="flex gap-2 overflow-x-auto -mx-1 px-1">
+          <div className="w-px h-4 bg-gray-200 mx-1" />
+
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider whitespace-nowrap mr-0.5">
+            Role
+          </span>
           {ROLE_OPTIONS.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setRoleFilter(key)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors',
+                'px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors',
                 roleFilter === key
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'bg-white text-gray-700 border-gray-200'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               )}
             >
               {label}

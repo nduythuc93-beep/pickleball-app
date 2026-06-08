@@ -110,8 +110,9 @@ export function SessionsPage() {
 
   return (
     <div>
-      {/* Time toggle — pill segmented inline */}
-      <div className="px-4 pt-3 pb-2 bg-white">
+      {/* STICKY HEADER: time toggle + filter chips, sticky bên dưới EventsPage segment */}
+      <div className="sticky top-[114px] z-10 bg-white border-b border-gray-100">
+      <div className="px-4 pt-3 pb-2">
         <div className="bg-gray-100 p-0.5 rounded-lg grid grid-cols-2 gap-0.5">
           <button
             onClick={() => setTimeTab('upcoming')}
@@ -161,7 +162,7 @@ export function SessionsPage() {
       </div>
 
       {/* Filter chips — compact horizontal scroll */}
-      <div className="px-4 pb-3 bg-white border-b border-gray-100">
+      <div className="px-4 pb-3">
         <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 scrollbar-hide">
           <button
             onClick={() => setFilter('all')}
@@ -193,6 +194,7 @@ export function SessionsPage() {
             )
           })}
         </div>
+      </div>
       </div>
 
       <div className="p-4 space-y-5">

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight, Trophy } from 'lucide-react'
 import { cn } from '../../lib/cn'
-import { ACTIVITY_STYLE, formatTime, formatVnd } from '../../lib/sessions'
+import { ACTIVITY_STYLE, formatDateShort, formatTime, formatVnd } from '../../lib/sessions'
 import type { ActivityType, PlaySession } from '../../types/database'
 
 type Props = {
@@ -55,6 +55,10 @@ export function SessionCard({ session, activityType, checkinCount, hasCheckedIn 
             )}
           </div>
           <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
+            <span className="flex items-center gap-1 font-semibold text-gray-700">
+              <Calendar className="w-3 h-3" />
+              {formatDateShort(session.session_date)}
+            </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatTime(session.start_time)}-{formatTime(session.end_time)}
@@ -163,11 +167,17 @@ export function SessionCardHero({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs mb-3 opacity-95">
+        <div className="flex items-center gap-3 text-xs mb-1 opacity-95">
+          <span className="flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-0.5 rounded-full font-semibold">
+            <Calendar className="w-3 h-3" />
+            {formatDateShort(session.session_date)}
+          </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
             {formatTime(session.start_time)}-{formatTime(session.end_time)}
           </span>
+        </div>
+        <div className="flex items-center gap-3 text-xs mb-3 opacity-90">
           <span className="flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5" />
             {session.venue}
@@ -246,6 +256,10 @@ export function SessionCardMini({
       </div>
 
       <div className="space-y-0.5 text-[11px] text-gray-600">
+        <div className="flex items-center gap-1 text-gray-500 font-semibold">
+          <Calendar className="w-2.5 h-2.5" />
+          {formatDateShort(session.session_date)}
+        </div>
         <div className="flex items-center gap-1">
           <Clock className="w-2.5 h-2.5" />
           {formatTime(session.start_time)}-{formatTime(session.end_time)}

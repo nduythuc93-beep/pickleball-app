@@ -35,6 +35,19 @@ export function formatDateFull(dateIso: string): string {
   return `${DAY_LABELS_LONG[d.getDay()]}, ${d.toLocaleDateString('vi-VN')}`
 }
 
+/** Format gọn cho card: "T2 8/6" hoặc "Hôm nay" / "Mai" */
+export function formatDateShort(dateIso: string): string {
+  const d = new Date(dateIso + 'T00:00:00')
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const tomorrowIso = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+  if (dateIso === todayIso) return 'Hôm nay'
+  if (dateIso === tomorrowIso) return 'Mai'
+  const dayLabel = DAY_LABELS[d.getDay()]
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dayLabel} ${dd}/${mm}`
+}
+
 /**
  * Check-in window:
  * - Mở: 7 NGÀY trước session.start_time

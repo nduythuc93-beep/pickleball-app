@@ -12,6 +12,7 @@ import { RoleBadges } from '../components/members/RoleBadges'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import type { Member, SkillLevel } from '../types/database'
+import { PLAY_EXPERIENCE_LABEL } from '../types/database'
 
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -32,7 +33,8 @@ export function MemberDetailPage() {
 
   const isOwn = me?.id === id
   const canEditProfile = isOwn || isAdmin
-  const canEditSkill = isAdmin
+  // Skill: Host/Admin/Coach mới được chấm trình
+  const canEditSkill = isAdmin || (me?.is_host ?? false) || (me?.is_coach ?? false)
 
   useEffect(() => {
     let mounted = true
@@ -205,6 +207,25 @@ export function MemberDetailPage() {
           </div>
         )}
 
+        {/* Play experience badge */}
+        {member.play_experience && (
+          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
+            <span className="text-2xl">
+              {member.play_experience === 'beginner' && '🌱'}
+              {member.play_experience === 'under_6m' && '🏓'}
+              {member.play_experience === 'over_6m' && '🔥'}
+            </span>
+            <div className="flex-1">
+              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
+                Kinh nghiệm
+              </p>
+              <p className="text-sm font-semibold text-gray-800">
+                {PLAY_EXPERIENCE_LABEL[member.play_experience]}
+              </p>
+            </div>
+          </div>
+        )}
+
         {canEditProfile ? (
           <div className="space-y-3 bg-white rounded-xl p-4">
             <Input
@@ -234,7 +255,7 @@ export function MemberDetailPage() {
             {canEditSkill && (
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Skill level {!isOwn && <span className="text-xs text-gray-500">(chỉ admin)</span>}
+                  Đánh giá trình độ <span className="text-xs text-gray-500">(Host/Coach/Admin)</span>
                 </label>
                 <div className="flex gap-2">
                   {(['A', 'B+', 'B-', 'C'] as SkillLevel[]).map((s) => (

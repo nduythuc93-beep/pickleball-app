@@ -6,7 +6,8 @@ import { Input } from '../ui/Input'
 import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
-import type { Member, SkillLevel } from '../../types/database'
+import type { Member, PlayExperience, SkillLevel } from '../../types/database'
+import { PLAY_EXPERIENCE_LABEL } from '../../types/database'
 
 type Props = {
   open: boolean
@@ -17,6 +18,7 @@ type Props = {
 }
 
 const SKILLS: SkillLevel[] = ['A', 'B+', 'B-', 'C']
+const EXPERIENCES: PlayExperience[] = ['beginner', 'under_6m', 'over_6m']
 
 export function MemberForm({ open, onClose, member, onSaved }: Props) {
   const { user } = useAuth()
@@ -28,6 +30,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
   const [zaloId, setZaloId] = useState('')
   const [bio, setBio] = useState('')
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('C')
+  const [experience, setExperience] = useState<PlayExperience | ''>('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isCoach, setIsCoach] = useState(false)
   const [isHost, setIsHost] = useState(false)
@@ -42,6 +45,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       setZaloId(member?.zalo_id ?? '')
       setBio(member?.bio ?? '')
       setSkillLevel(member?.skill_level ?? 'C')
+      setExperience(member?.play_experience ?? '')
       setIsAdmin(member?.is_admin ?? false)
       setIsCoach(member?.is_coach ?? false)
       setIsHost(member?.is_host ?? false)
@@ -61,6 +65,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       phone: phone.trim() || null,
       zalo_id: zaloId.trim() || null,
       bio: bio.trim() || null,
+      play_experience: experience || null,
       skill_level: skillLevel,
       is_admin: isAdmin,
       is_coach: isCoach,
@@ -142,7 +147,42 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Skill level</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Kinh nghiệm chơi
+          </label>
+          <div className="grid grid-cols-3 gap-1">
+            <button
+              type="button"
+              onClick={() => setExperience('')}
+              className={`py-2 rounded-lg text-xs font-medium border ${
+                experience === ''
+                  ? 'bg-gray-200 text-gray-700 border-gray-300'
+                  : 'bg-white text-gray-500 border-gray-200'
+              }`}
+            >
+              —
+            </button>
+            {EXPERIENCES.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => setExperience(e)}
+                className={`py-2 rounded-lg text-xs font-medium border ${
+                  experience === e
+                    ? 'bg-primary/10 text-primary border-primary'
+                    : 'bg-white text-gray-700 border-gray-200'
+                }`}
+              >
+                {PLAY_EXPERIENCE_LABEL[e]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Skill level (đánh giá bởi Host/Coach/Admin)
+          </label>
           <div className="flex gap-2">
             {SKILLS.map((s) => (
               <button

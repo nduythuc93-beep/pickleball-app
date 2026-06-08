@@ -1,5 +1,13 @@
 export type SkillLevel = 'A' | 'B+' | 'B-' | 'C'
 
+export type PlayExperience = 'beginner' | 'under_6m' | 'over_6m'
+
+export const PLAY_EXPERIENCE_LABEL: Record<PlayExperience, string> = {
+  beginner: 'Chưa biết chơi',
+  under_6m: 'Dưới 6 tháng',
+  over_6m: 'Trên 6 tháng',
+}
+
 export type Member = {
   id: string
   user_id: string | null
@@ -11,6 +19,7 @@ export type Member = {
   skill_level: SkillLevel
   zalo_id: string | null
   bio: string | null
+  play_experience: PlayExperience | null
   is_admin: boolean
   is_coach: boolean
   is_host: boolean

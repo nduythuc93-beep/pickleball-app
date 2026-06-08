@@ -8,13 +8,17 @@ import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { cn } from '../lib/cn'
-import type { SkillLevel } from '../types/database'
+import type { PlayExperience } from '../types/database'
 
-const SKILLS: Array<{ key: SkillLevel; label: string; hint: string }> = [
-  { key: 'A', label: 'A', hint: 'Cao cấp' },
-  { key: 'B+', label: 'B+', hint: 'Trên trung bình' },
-  { key: 'B-', label: 'B-', hint: 'Trung bình' },
-  { key: 'C', label: 'C', hint: 'Mới chơi' },
+const EXPERIENCE_OPTIONS: Array<{
+  key: PlayExperience
+  label: string
+  emoji: string
+  hint: string
+}> = [
+  { key: 'beginner', label: 'Chưa biết chơi', emoji: '🌱', hint: 'Lần đầu cầm vợt' },
+  { key: 'under_6m', label: 'Dưới 6 tháng', emoji: '🏓', hint: 'Mới làm quen' },
+  { key: 'over_6m', label: 'Trên 6 tháng', emoji: '🔥', hint: 'Đã có kinh nghiệm' },
 ]
 
 export function SignupPage() {
@@ -24,7 +28,7 @@ export function SignupPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [skill, setSkill] = useState<SkillLevel>('C')
+  const [experience, setExperience] = useState<PlayExperience>('beginner')
   const [password, setPassword] = useState('')
   const [usePassword, setUsePassword] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -53,7 +57,7 @@ export function SignupPage() {
       p_full_name: fullName.trim(),
       p_email: email.trim().toLowerCase(),
       p_phone: phone.trim() || null,
-      p_skill_level: skill,
+      p_experience: experience,
     })
     if (memErr) {
       setSubmitting(false)
@@ -167,28 +171,51 @@ export function SignupPage() {
 
             <div className="space-y-1">
               <label className="block text-sm font-medium text-gray-700">
-                Trình độ *
+                Bạn đã chơi Pickleball bao lâu? *
               </label>
-              <div className="grid grid-cols-4 gap-1">
-                {SKILLS.map((s) => (
+              <div className="space-y-1.5">
+                {EXPERIENCE_OPTIONS.map((opt) => (
                   <button
-                    key={s.key}
+                    key={opt.key}
                     type="button"
-                    onClick={() => setSkill(s.key)}
+                    onClick={() => setExperience(opt.key)}
                     className={cn(
-                      'py-2 rounded-lg border text-sm font-bold transition-colors',
-                      skill === s.key
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-white text-gray-700 border-gray-200'
+                      'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
+                      experience === opt.key
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
                     )}
-                    title={s.hint}
                   >
-                    {s.label}
+                    <span className="text-2xl">{opt.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={cn(
+                          'text-sm font-semibold',
+                          experience === opt.key ? 'text-primary' : 'text-gray-900'
+                        )}
+                      >
+                        {opt.label}
+                      </div>
+                      <div className="text-[11px] text-gray-500">{opt.hint}</div>
+                    </div>
+                    <div
+                      className={cn(
+                        'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                        experience === opt.key
+                          ? 'border-primary'
+                          : 'border-gray-300'
+                      )}
+                    >
+                      {experience === opt.key && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-gray-400">
-                {SKILLS.find((s) => s.key === skill)?.hint}
+              <p className="text-[10px] text-gray-400 italic mt-1">
+                💡 Trình độ A/B+/B-/C sẽ được Host/Coach/Admin đánh giá sau khi anh/chị
+                tham gia buổi đầu tiên.
               </p>
             </div>
 

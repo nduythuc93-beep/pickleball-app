@@ -51,20 +51,22 @@ export function TournamentsPage() {
 
   return (
     <div>
-      <nav className="bg-white border-b border-gray-200 grid grid-cols-2">
-        {(['active', 'completed'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              'py-3 text-sm font-medium border-b-2 transition-colors',
-              tab === t ? 'border-primary text-primary' : 'border-transparent text-gray-500'
-            )}
-          >
-            {t === 'active' ? 'Đang / sắp diễn ra' : 'Đã kết thúc'}
-          </button>
-        ))}
-      </nav>
+      <div className="px-4 pt-3 pb-3 bg-white border-b border-gray-100">
+        <div className="bg-gray-100 p-0.5 rounded-lg grid grid-cols-2 gap-0.5">
+          {(['active', 'completed'] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                'py-1.5 rounded-md text-xs font-semibold transition-all',
+                tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              )}
+            >
+              {t === 'active' ? 'Đang / sắp diễn ra' : 'Đã kết thúc'}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="p-4 space-y-2">
         {loading && <div className="text-center text-gray-500 text-sm py-8">Đang tải...</div>}

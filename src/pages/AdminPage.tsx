@@ -18,11 +18,11 @@ import { cn } from '../lib/cn'
 import type { Member, Survey, Tournament } from '../types/database'
 
 type Tab = 'members' | 'surveys' | 'sessions' | 'tournaments'
-const TABS: Array<{ key: Tab; label: string }> = [
-  { key: 'members', label: 'Thành viên' },
-  { key: 'sessions', label: 'Đánh tập' },
-  { key: 'surveys', label: 'Khảo sát' },
-  { key: 'tournaments', label: 'Giải đấu' },
+const TABS: Array<{ key: Tab; label: string; icon: string }> = [
+  { key: 'members', label: 'Thành viên', icon: '👥' },
+  { key: 'sessions', label: 'Đánh tập', icon: '🏓' },
+  { key: 'surveys', label: 'Khảo sát', icon: '📋' },
+  { key: 'tournaments', label: 'Giải đấu', icon: '🏆' },
 ]
 
 export function AdminPage() {
@@ -31,22 +31,26 @@ export function AdminPage() {
   return (
     <div>
       <TopBar title="Admin" />
-      <nav className="bg-white border-b border-gray-200 flex">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={cn(
-              'flex-1 py-3 text-sm font-medium border-b-2 transition-colors',
-              tab === key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500'
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      {/* Scrollable pill tabs (4 tabs hơi chật cho border-b style) */}
+      <div className="bg-white px-3 pt-3 pb-3 border-b border-gray-100">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
+          {TABS.map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors',
+                tab === key
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              )}
+            >
+              <span>{icon}</span>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {tab === 'members' && <MembersAdminTab />}
       {tab === 'sessions' && <AdminSessionsTab />}

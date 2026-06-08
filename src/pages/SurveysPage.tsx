@@ -74,20 +74,42 @@ export function SurveysPage() {
     <div>
       <TopBar title="Khảo sát" />
 
-      <nav className="bg-white border-b border-gray-200 grid grid-cols-2">
-        {(['open', 'closed'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              'py-3 text-sm font-medium border-b-2 transition-colors',
-              tab === t ? 'border-primary text-primary' : 'border-transparent text-gray-500'
-            )}
-          >
-            {t === 'open' ? `Đang mở (${surveys.filter((s) => s.is_open && (!s.closes_at || new Date(s.closes_at) >= new Date())).length})` : 'Đã đóng'}
-          </button>
-        ))}
-      </nav>
+      <div className="px-4 pt-3 pb-3 bg-white border-b border-gray-100">
+        <div className="bg-gray-100 p-0.5 rounded-lg grid grid-cols-2 gap-0.5">
+          {(['open', 'closed'] as Tab[]).map((t) => {
+            const count =
+              t === 'open'
+                ? surveys.filter(
+                    (s) => s.is_open && (!s.closes_at || new Date(s.closes_at) >= new Date())
+                  ).length
+                : surveys.filter(
+                    (s) => !s.is_open || (s.closes_at && new Date(s.closes_at) < new Date())
+                  ).length
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  'py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
+                  tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                )}
+              >
+                {t === 'open' ? 'Đang mở' : 'Đã đóng'}
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'text-[10px] px-1.5 py-0.5 rounded-full font-bold',
+                      tab === t ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       <div className="p-4 space-y-2">
         {loading && (

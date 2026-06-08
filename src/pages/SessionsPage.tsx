@@ -110,44 +110,66 @@ export function SessionsPage() {
 
   return (
     <div>
-      {/* Time tab: Sắp tới / Lịch sử */}
-      <div className="bg-white border-b border-gray-100 grid grid-cols-2">
-        <button
-          onClick={() => setTimeTab('upcoming')}
-          className={cn(
-            'py-2.5 text-xs font-medium border-b-2 transition-colors flex items-center justify-center gap-1',
-            timeTab === 'upcoming'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500'
-          )}
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          Sắp tới ({upcomingCount})
-        </button>
-        <button
-          onClick={() => setTimeTab('history')}
-          className={cn(
-            'py-2.5 text-xs font-medium border-b-2 transition-colors flex items-center justify-center gap-1',
-            timeTab === 'history'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500'
-          )}
-        >
-          <History className="w-3.5 h-3.5" />
-          Lịch sử 14 ngày ({historyCount})
-        </button>
+      {/* Time toggle — pill segmented inline */}
+      <div className="px-4 pt-3 pb-2 bg-white">
+        <div className="bg-gray-100 p-0.5 rounded-lg grid grid-cols-2 gap-0.5">
+          <button
+            onClick={() => setTimeTab('upcoming')}
+            className={cn(
+              'py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1',
+              timeTab === 'upcoming'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500'
+            )}
+          >
+            <Calendar className="w-3 h-3" />
+            Sắp tới
+            {upcomingCount > 0 && (
+              <span
+                className={cn(
+                  'ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold',
+                  timeTab === 'upcoming' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'
+                )}
+              >
+                {upcomingCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setTimeTab('history')}
+            className={cn(
+              'py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1',
+              timeTab === 'history'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500'
+            )}
+          >
+            <History className="w-3 h-3" />
+            Lịch sử 14d
+            {historyCount > 0 && (
+              <span
+                className={cn(
+                  'ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold',
+                  timeTab === 'history' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600'
+                )}
+              >
+                {historyCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="px-4 py-3 bg-white border-b border-gray-100">
-        <div className="flex gap-2 overflow-x-auto -mx-1 px-1 scrollbar-hide">
+      {/* Filter chips — compact horizontal scroll */}
+      <div className="px-4 pb-3 bg-white border-b border-gray-100">
+        <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 scrollbar-hide">
           <button
             onClick={() => setFilter('all')}
             className={cn(
-              'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border',
+              'px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors',
               filter === 'all'
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white text-gray-700 border-gray-200'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
             )}
           >
             Tất cả
@@ -159,12 +181,14 @@ export function SessionsPage() {
                 key={at.key}
                 onClick={() => setFilter(at.key)}
                 className={cn(
-                  'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border flex items-center gap-1',
-                  filter === at.key ? style.chip + ' shadow-sm' : 'bg-white text-gray-700 border-gray-200'
+                  'px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors flex items-center gap-1',
+                  filter === at.key
+                    ? style.chip + ' shadow-sm'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                 )}
               >
-                <span>{at.icon}</span>
-                {at.label}
+                <span className="text-sm">{at.icon}</span>
+                {at.label.replace('Đánh ', '').replace('Máy bắn ', 'Máy ')}
               </button>
             )
           })}

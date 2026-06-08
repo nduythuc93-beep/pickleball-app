@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -129,9 +129,15 @@ export function LoginPage() {
             <Button type="submit" loading={sending} className="w-full">
               {mode === 'magic' ? 'Gửi magic link' : 'Đăng nhập'}
             </Button>
-            <p className="text-xs text-center text-gray-500">
-              Chỉ thành viên đã được admin add mới đăng nhập được.
-            </p>
+            <div className="text-center pt-2 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-1">Chưa có tài khoản?</p>
+              <Link
+                to="/signup"
+                className="text-sm text-primary font-semibold hover:underline"
+              >
+                Đăng ký tham gia CLB →
+              </Link>
+            </div>
           </form>
         )}
       </div>

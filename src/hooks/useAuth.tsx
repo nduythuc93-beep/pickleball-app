@@ -11,6 +11,7 @@ type AuthContextValue = {
   loading: boolean
   signInWithEmail: (email: string) => Promise<{ error: string | null }>
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>
+  signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null; needsConfirm: boolean }>
   signOut: () => Promise<void>
   refreshMember: () => Promise<void>
 }
@@ -80,6 +81,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
+  const signUpWithPassword = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    })
+    if (error) return { error: error.message, needsConfirm: false }
+    // Nếu identities rỗng → user đã tồn tại, signUp không tạo mới
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      return { error: 'Email này đã được đăng ký. Vui lòng đăng nhập.', needsConfirm: false }
+    }
+    // Nếu Supabase yêu cầu confirm email trước khi login
+    const needsConfirm = !data.session
+    return { error: null, needsConfirm }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
@@ -98,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signInWithEmail,
         signInWithPassword,
+        signUpWithPassword,
         signOut,
         refreshMember,
       }}

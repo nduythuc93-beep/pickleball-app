@@ -12,14 +12,16 @@ import { TournamentFormModal } from '../components/tournaments/TournamentFormMod
 import { TournamentCard } from '../components/tournaments/TournamentCard'
 import { AdminSessionsTab } from '../components/sessions/AdminSessionsTab'
 import { RewardsAdminTab } from '../components/rewards/RewardsAdminTab'
+import { AnnouncementsAdminTab } from '../components/announcements/AnnouncementsAdminTab'
 import { Button } from '../components/ui/Button'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { cn } from '../lib/cn'
 import type { Member, Survey, Tournament } from '../types/database'
 
-type Tab = 'members' | 'surveys' | 'sessions' | 'tournaments' | 'rewards'
+type Tab = 'members' | 'surveys' | 'sessions' | 'tournaments' | 'rewards' | 'announcements'
 const TABS: Array<{ key: Tab; label: string; icon: string }> = [
+  { key: 'announcements', label: 'Thông báo', icon: '📢' },
   { key: 'members', label: 'Thành viên', icon: '👥' },
   { key: 'sessions', label: 'Đánh tập', icon: '🏓' },
   { key: 'rewards', label: 'Quà', icon: '🎁' },
@@ -54,6 +56,7 @@ export function AdminPage() {
         </div>
       </div>
 
+      {tab === 'announcements' && <AnnouncementsAdminTab />}
       {tab === 'members' && <MembersAdminTab />}
       {tab === 'sessions' && <AdminSessionsTab />}
       {tab === 'rewards' && <RewardsAdminTab />}

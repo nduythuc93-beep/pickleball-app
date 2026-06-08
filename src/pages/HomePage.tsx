@@ -21,6 +21,7 @@ import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SkillBadge } from '../components/members/SkillBadge'
 import { SessionCardHero, SessionCardMini } from '../components/sessions/SessionCard'
+import { AnnouncementBanner } from '../components/announcements/AnnouncementBanner'
 import { cn } from '../lib/cn'
 import type {
   ActivityType,
@@ -260,6 +261,9 @@ export function HomePage() {
           <LogOut className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Thông báo */}
+      <AnnouncementBanner />
 
       {/* Buổi đánh hôm nay — chỉ hiện sessions chưa end */}
       {(() => {

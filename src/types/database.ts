@@ -169,6 +169,41 @@ export type SessionCheckin = {
 }
 
 // ========================================
+// WALK-IN CHECKINS
+// ========================================
+
+export type WalkInCheckin = {
+  id: string
+  full_name: string
+  phone: string
+  session_id: string | null
+  source: string
+  referral_source: string | null
+  checked_in_at: string
+  converted_to_member_id: string | null
+  notified_telegram_at: string | null
+  notified_sheet_at: string | null
+  notes: string | null
+}
+
+// ========================================
+// ANNOUNCEMENTS
+// ========================================
+
+export type Announcement = {
+  id: string
+  title: string
+  body: string
+  is_pinned: boolean
+  is_active: boolean
+  expires_at: string | null
+  posted_by: string | null
+  posted_by_name: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ========================================
 // REWARDS
 // ========================================
 

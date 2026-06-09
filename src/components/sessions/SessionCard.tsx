@@ -236,15 +236,16 @@ export function SessionCardMini({
     <Link
       to={`/sessions/${session.id}`}
       className={cn(
-        'bg-white rounded-xl p-3 block hover:bg-gray-50 transition-colors shadow-sm border-l-4',
+        'bg-white rounded-xl px-2.5 py-2 block hover:bg-gray-50 transition-colors shadow-sm border-l-4',
         isCancelled && 'opacity-50',
         session.activity_type === 'training' ? 'border-amber-500' : 'border-blue-500'
       )}
     >
-      <div className="flex items-center gap-2 mb-1.5">
+      {/* Row 1: icon + tên + +điểm */}
+      <div className="flex items-center gap-1.5">
         <div
           className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center text-lg flex-shrink-0',
+            'w-6 h-6 rounded flex items-center justify-center text-sm flex-shrink-0',
             style.iconBg
           )}
         >
@@ -253,36 +254,37 @@ export function SessionCardMini({
         <h3 className="font-semibold text-xs text-gray-900 truncate flex-1">
           {activityType?.label ?? session.activity_type}
         </h3>
+        {session.points_award > 0 && (
+          <span className="text-[10px] font-bold text-primary">+{session.points_award}đ</span>
+        )}
       </div>
 
-      <div className="space-y-0.5 text-[11px] text-gray-600">
-        <div className="flex items-center gap-1 text-gray-500 font-semibold">
-          <Calendar className="w-2.5 h-2.5" />
+      {/* Row 2: date + time + count (1 dòng) */}
+      <div className="flex items-center gap-1 text-[11px] text-gray-600 mt-1 truncate">
+        <span className="font-semibold text-gray-700 truncate">
           {formatDateShort(session.session_date)}
-        </div>
-        <div className="flex items-center gap-1">
-          <Clock className="w-2.5 h-2.5" />
+        </span>
+        <span className="text-gray-400">·</span>
+        <span>
           {formatTime(session.start_time)}-{formatTime(session.end_time)}
-        </div>
-        <div className="font-semibold text-gray-800">
-          {formatVnd(session.price_vnd)}
-          {session.points_award > 0 && (
-            <span className="text-primary ml-1">+{session.points_award}đ</span>
-          )}
-        </div>
+        </span>
         {typeof checkinCount === 'number' && (
-          <div className="flex items-center gap-1">
-            <Users className="w-2.5 h-2.5" /> {checkinCount}/{session.max_attendees}
-          </div>
+          <>
+            <span className="text-gray-400">·</span>
+            <span>
+              {checkinCount}/{session.max_attendees}
+            </span>
+          </>
         )}
-        {session.instructor_name && (
-          <div className="truncate text-amber-700 font-medium">HLV: {session.instructor_name}</div>
+        {hasCheckedIn && (
+          <CheckCircle2 className="w-3 h-3 text-primary ml-auto flex-shrink-0" />
         )}
       </div>
 
-      {hasCheckedIn && (
-        <div className="mt-1.5 text-[10px] text-primary font-bold flex items-center gap-0.5">
-          <CheckCircle2 className="w-2.5 h-2.5" /> Đã ĐK
+      {/* Row 3 (optional): HLV name nếu có */}
+      {session.instructor_name && (
+        <div className="text-[10px] text-amber-700 font-medium truncate mt-0.5">
+          HLV: {session.instructor_name}
         </div>
       )}
     </Link>

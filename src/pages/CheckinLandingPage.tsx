@@ -8,6 +8,7 @@ import {
   Lock,
   Trophy,
   Calendar,
+  MapPin,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -117,53 +118,56 @@ export function CheckinLandingPage() {
     setDone(true)
   }
 
-  // Done screen — show preview sessions + locked tournaments
+  // Done screen — visible content, locked actions
   if (done) {
     return (
       <div className="min-h-screen bg-gray-50 pb-10">
-        {/* Success header */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 text-center">
-          <div className="w-14 h-14 mx-auto mb-2 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-            <UserCheck className="w-8 h-8" />
+        {/* Success header with gradient */}
+        <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 text-white p-6 pb-10 relative overflow-hidden">
+          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full" />
+          <div className="absolute -left-12 -bottom-12 w-40 h-40 bg-white/5 rounded-full" />
+          <div className="relative text-center">
+            <div className="text-5xl mb-2">🎉</div>
+            <h1 className="text-2xl font-bold">Đã ghi nhận tham gia!</h1>
+            <p className="text-sm opacity-95 mt-1">
+              Chào <strong>{fullName}</strong>, chúc đánh vui vẻ
+            </p>
           </div>
-          <h1 className="text-xl font-bold">Đã ghi nhận tham gia 🎉</h1>
-          <p className="text-sm opacity-95 mt-1">
-            Chào <strong>{fullName}</strong>, chúc anh/chị đánh vui vẻ!
-          </p>
         </div>
 
-        {/* Signup CTA — at top to convert */}
-        <div className="px-4 -mt-3 mb-3">
+        {/* Signup CTA — chìm xuống từ header */}
+        <div className="px-4 -mt-6 mb-3 relative z-10">
           <Link
             to="/signup"
-            className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden"
+            className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-4 text-white shadow-xl relative overflow-hidden"
           >
-            <Gift className="absolute -right-4 -bottom-4 w-24 h-24 opacity-15" />
+            <Gift className="absolute -right-3 -bottom-3 w-24 h-24 opacity-20" />
             <div className="relative">
               <p className="text-[10px] font-bold uppercase tracking-widest opacity-95">
                 ⚡ Mở khoá đầy đủ tính năng
               </p>
               <h3 className="text-lg font-bold mt-1">Đăng ký thành viên (30 giây)</h3>
-              <ul className="text-xs mt-2 space-y-0.5 opacity-95">
-                <li>🎁 Free 1 chai nước</li>
-                <li>🎯 +20 điểm khởi đầu</li>
-                <li>🏆 Mở khoá Giải đấu + tích điểm đổi quà</li>
-              </ul>
-              <div className="mt-3 inline-flex items-center gap-1 bg-white/25 backdrop-blur px-3 py-1 rounded-full text-xs font-bold">
+              <div className="flex flex-wrap gap-1.5 mt-2 text-xs opacity-95">
+                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🎁 Free chai nước</span>
+                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🎯 +20 điểm</span>
+                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🏆 Đổi quà</span>
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1 bg-white text-purple-700 px-4 py-1.5 rounded-full text-sm font-bold shadow">
                 Đăng ký ngay <ArrowRight className="w-3 h-3" />
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Sự kiện gần nhất — visible cho walk-in */}
+        {/* SỰ KIỆN SẮP TỚI */}
         <div className="px-4 mt-4">
           <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            Sự kiện gần nhất
+            <Calendar className="w-3 h-3 text-primary" />
+            Sự kiện sắp tới
           </h2>
           {todaySessions.length === 0 ? (
-            <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">
+            <div className="bg-white rounded-xl p-6 text-center text-xs text-gray-500">
+              <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-1" />
               Chưa có sự kiện sắp tới
             </div>
           ) : (
@@ -172,7 +176,10 @@ export function CheckinLandingPage() {
                 const at = activityTypes.find((a) => a.key === s.activity_type)
                 const style = ACTIVITY_STYLE[s.activity_type]
                 return (
-                  <div key={s.id} className="bg-white rounded-xl p-3 flex items-center gap-3">
+                  <div
+                    key={s.id}
+                    className="bg-white rounded-xl p-3 flex items-center gap-3 shadow-sm"
+                  >
                     <div
                       className={cn(
                         'w-11 h-11 rounded-lg flex items-center justify-center text-xl flex-shrink-0',
@@ -183,12 +190,12 @@ export function CheckinLandingPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm truncate">{at?.label}</p>
-                      <p className="text-xs text-gray-500">
-                        {formatDateShort(s.session_date)} · {formatTime(s.start_time)}-
-                        {formatTime(s.end_time)} · {s.venue}
+                      <p className="text-xs text-gray-500 truncate">
+                        {formatDateShort(s.session_date)} ·{' '}
+                        {formatTime(s.start_time)}-{formatTime(s.end_time)} · {s.venue}
                       </p>
                     </div>
-                    <span className="text-sm font-bold text-gray-700">
+                    <span className="text-sm font-bold text-gray-700 flex-shrink-0">
                       {formatVnd(s.price_vnd)}
                     </span>
                   </div>
@@ -198,90 +205,120 @@ export function CheckinLandingPage() {
           )}
         </div>
 
-        {/* Tournaments — LOCKED */}
+        {/* GIẢI ĐẤU — visible content, locked action */}
         <div className="px-4 mt-5">
           <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-            <Trophy className="w-3 h-3" />
+            <Trophy className="w-3 h-3 text-amber-500" />
             Giải đấu CLB
           </h2>
           {tournaments.length === 0 ? (
-            <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">
-              Chưa có giải đấu sắp diễn ra
+            <div className="bg-white rounded-xl p-6 text-center text-xs text-gray-500">
+              <Trophy className="w-8 h-8 mx-auto text-gray-300 mb-1" />
+              Chưa có giải đấu sắp tới
             </div>
           ) : (
-            <div className="space-y-2 relative">
-              <div className="space-y-2 blur-sm pointer-events-none select-none">
-                {tournaments.slice(0, 2).map((t) => (
-                  <div key={t.id} className="bg-white rounded-xl p-3">
-                    <p className="font-semibold text-sm">{t.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t.event_date && new Date(t.event_date).toLocaleDateString('vi-VN')}
-                      {t.venue && ` · ${t.venue}`}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              {/* Lock overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Link
-                  to="/signup"
-                  className="bg-white rounded-2xl shadow-xl border-2 border-primary px-4 py-3 flex flex-col items-center gap-1 hover:scale-105 transition-transform"
+            <div className="space-y-2">
+              {tournaments.slice(0, 2).map((t) => (
+                <div
+                  key={t.id}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm relative"
                 >
-                  <Lock className="w-6 h-6 text-primary" />
-                  <p className="text-xs font-bold text-gray-900">Đăng ký thành viên</p>
-                  <p className="text-[10px] text-gray-500">để xem chi tiết giải đấu</p>
-                </Link>
-              </div>
+                  {t.banner_url ? (
+                    <div className="aspect-[16/9] bg-gray-100">
+                      <img
+                        src={t.banner_url}
+                        alt={t.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-[16/9] bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                      <Trophy className="w-12 h-12 text-amber-400" />
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <h3 className="font-bold text-sm">{t.name}</h3>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
+                      {t.event_date && (
+                        <span className="flex items-center gap-0.5">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(t.event_date).toLocaleDateString('vi-VN')}
+                        </span>
+                      )}
+                      {t.venue && (
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="w-3 h-3" />
+                          {t.venue}
+                        </span>
+                      )}
+                    </div>
+                    <Link
+                      to="/signup"
+                      className="mt-2 w-full block py-2 rounded-lg bg-gray-100 text-gray-500 text-xs font-bold text-center flex items-center justify-center gap-1 hover:bg-amber-50 hover:text-amber-700"
+                    >
+                      <Lock className="w-3 h-3" />
+                      Đăng ký thành viên để tham gia
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Rewards — LOCKED */}
+        {/* QUÀ — visible với dimmed look + locked CTA */}
         <div className="px-4 mt-5">
           <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-            <Gift className="w-3 h-3" />
+            <Gift className="w-3 h-3 text-pink-500" />
             Đổi điểm nhận quà
           </h2>
           {rewards.length === 0 ? (
-            <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">
+            <div className="bg-white rounded-xl p-6 text-center text-xs text-gray-500">
+              <Gift className="w-8 h-8 mx-auto text-gray-300 mb-1" />
               Chưa có quà nào
             </div>
           ) : (
-            <div className="relative">
-              <div className="grid grid-cols-2 gap-2 blur-sm pointer-events-none select-none">
-                {rewards.slice(0, 4).map((r) => (
-                  <div key={r.id} className="bg-white rounded-xl p-2 shadow-sm">
-                    <div className="aspect-square bg-gray-100 rounded mb-1.5 flex items-center justify-center">
-                      {r.image_url ? (
-                        <img
-                          src={r.image_url}
-                          alt={r.name}
-                          className="w-full h-full object-cover rounded"
-                        />
-                      ) : (
-                        <Gift className="w-6 h-6 text-gray-300" />
-                      )}
-                    </div>
-                    <p className="text-xs font-semibold truncate">{r.name}</p>
-                    <p className="text-[10px] text-primary font-bold">{r.cost_points}đ</p>
-                  </div>
-                ))}
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Link
-                  to="/signup"
-                  className="bg-white rounded-2xl shadow-xl border-2 border-primary px-4 py-3 flex flex-col items-center gap-1 hover:scale-105 transition-transform"
+            <div className="grid grid-cols-2 gap-2">
+              {rewards.slice(0, 4).map((r) => (
+                <div
+                  key={r.id}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm opacity-70"
                 >
-                  <Lock className="w-6 h-6 text-primary" />
-                  <p className="text-xs font-bold text-gray-900">Đăng ký thành viên</p>
-                  <p className="text-[10px] text-gray-500">để tích điểm + đổi quà</p>
-                </Link>
-              </div>
+                  <div className="aspect-square bg-gray-100">
+                    {r.image_url ? (
+                      <img
+                        src={r.image_url}
+                        alt={r.name}
+                        className="w-full h-full object-cover grayscale"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-50 to-orange-50">
+                        <Gift className="w-8 h-8 text-pink-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs font-semibold truncate text-gray-800">{r.name}</p>
+                    <p className="text-[10px] text-pink-600 font-bold">{r.cost_points} điểm</p>
+                    <div className="mt-1.5 py-1 rounded text-[10px] font-bold text-center bg-gray-100 text-gray-500 flex items-center justify-center gap-0.5">
+                      <Lock className="w-2.5 h-2.5" />
+                      Khoá
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+          <Link
+            to="/signup"
+            className="mt-3 block py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-bold text-center flex items-center justify-center gap-1.5"
+          >
+            <Gift className="w-3.5 h-3.5" />
+            Đăng ký thành viên để đổi quà
+          </Link>
         </div>
 
-        <div className="px-4 mt-5 text-center">
+        <div className="px-4 mt-6 text-center">
           <button
             onClick={() => {
               setDone(false)

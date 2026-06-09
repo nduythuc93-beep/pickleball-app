@@ -10,6 +10,7 @@ import { uploadTournamentBanner, removeTournamentBanner } from '../../lib/storag
 import { useAuth } from '../../hooks/useAuth'
 import { cn } from '../../lib/cn'
 import type { SkillLevel, Tournament, TournamentFormat, TournamentStatus } from '../../types/database'
+import { SKILL_PRESETS } from '../../types/database'
 
 type Props = {
   open: boolean
@@ -28,7 +29,7 @@ const STATUSES: Array<{ key: TournamentStatus; label: string }> = [
   { key: 'ongoing', label: 'Đang diễn ra' },
   { key: 'completed', label: 'Đã kết thúc' },
 ]
-const SKILLS: SkillLevel[] = ['A', 'B+', 'B-', 'C']
+const SKILLS: SkillLevel[] = SKILL_PRESETS
 
 export function TournamentFormModal({ open, onClose, tournament, onSaved }: Props) {
   const { user } = useAuth()

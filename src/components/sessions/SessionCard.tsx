@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight, Trophy } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight, Trophy, Sparkles } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ACTIVITY_STYLE, formatDateShort, formatTime, formatVnd } from '../../lib/sessions'
 import { MemberAvatar } from '../members/MemberAvatar'
@@ -190,11 +190,17 @@ export function SessionCardHero({
       <div className="relative p-5">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
               <span className="text-3xl">{activityType?.icon ?? '🏓'}</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
                 ★ Hoạt động chính
               </span>
+              {hasCheckedIn && (
+                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-white text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm ring-1 ring-emerald-300">
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  Đã CK
+                </span>
+              )}
             </div>
             <h3 className="text-xl font-bold leading-tight drop-shadow">
               {activityType?.label ?? session.activity_type}
@@ -318,21 +324,36 @@ export function SessionCardHero({
           </div>
         )}
 
-        <div className="flex items-center justify-between">
+        {/* Bottom action row — mirror tournament style: meta left, action pill right */}
+        <div className="flex items-end justify-between gap-2 mt-1">
+          <div className="text-[11px] opacity-90 leading-tight flex items-center gap-1">
+            {hasCheckedIn ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Bạn đã có chỗ — xem chi tiết</span>
+              </>
+            ) : isCancelled || isCompleted ? null : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Tap để check-in & lấy điểm</span>
+              </>
+            )}
+          </div>
+
           {hasCheckedIn ? (
-            <span className="bg-white/25 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-white/30">
+            <span className="bg-white/25 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-white/40 shadow-sm whitespace-nowrap">
               <CheckCircle2 className="w-3.5 h-3.5" /> Đã check-in
             </span>
           ) : isCancelled ? (
-            <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold">
+            <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
               ĐÃ HUỶ
             </span>
           ) : isCompleted ? (
-            <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold">
+            <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
               ĐÃ XONG
             </span>
           ) : (
-            <span className="bg-white text-gray-900 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-md">
+            <span className="bg-white text-gray-900 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-md whitespace-nowrap">
               Check-in
               <ArrowRight className="w-3 h-3" />
             </span>

@@ -12,7 +12,7 @@ import { RoleBadges } from '../components/members/RoleBadges'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import type { Member, SkillLevel } from '../types/database'
-import { GENDER_LABEL, PLAY_EXPERIENCE_LABEL } from '../types/database'
+import { GENDER_LABEL, PLAY_EXPERIENCE_LABEL, SKILL_PRESETS } from '../types/database'
 import { cn } from '../lib/cn'
 
 export function MemberDetailPage() {
@@ -30,7 +30,8 @@ export function MemberDetailPage() {
   const [bio, setBio] = useState('')
   const [phone, setPhone] = useState('')
   const [zaloId, setZaloId] = useState('')
-  const [skillLevel, setSkillLevel] = useState<SkillLevel>('C')
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>('2.0')
+  const [customSkill, setCustomSkill] = useState('')
 
   const isOwn = me?.id === id
   const canEditProfile = isOwn || isAdmin
@@ -56,6 +57,7 @@ export function MemberDetailPage() {
         setPhone(m.phone ?? '')
         setZaloId(m.zalo_id ?? '')
         setSkillLevel(m.skill_level)
+        setCustomSkill(SKILL_PRESETS.includes(m.skill_level) ? '' : m.skill_level)
       }
       setLoading(false)
     }
@@ -73,8 +75,14 @@ export function MemberDetailPage() {
       phone: phone.trim() || null,
       zalo_id: zaloId.trim() || null,
     }
-    if (canEditSkill && skillLevel !== member.skill_level) {
-      updates.skill_level = skillLevel
+    const finalSkill = (customSkill.trim() || skillLevel).trim()
+    if (canEditSkill && finalSkill && finalSkill !== member.skill_level) {
+      if (finalSkill.length > 10) {
+        setSaving(false)
+        toast.error('Trình độ tối đa 10 ký tự')
+        return
+      }
+      updates.skill_level = finalSkill
       updates.skill_updated_by = user?.id ?? null
       updates.skill_updated_at = new Date().toISOString()
     }
@@ -287,16 +295,20 @@ export function MemberDetailPage() {
             {canEditSkill && (
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Đánh giá trình độ <span className="text-xs text-gray-500">(Host/Coach/Admin)</span>
+                  Đánh giá trình độ DUPR{' '}
+                  <span className="text-xs text-gray-500">(Host/Coach/Admin)</span>
                 </label>
-                <div className="flex gap-2">
-                  {(['A', 'B+', 'B-', 'C'] as SkillLevel[]).map((s) => (
+                <div className="grid grid-cols-4 gap-1.5">
+                  {SKILL_PRESETS.map((s) => (
                     <button
                       key={s}
                       type="button"
-                      onClick={() => setSkillLevel(s)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border ${
-                        skillLevel === s
+                      onClick={() => {
+                        setSkillLevel(s)
+                        setCustomSkill('')
+                      }}
+                      className={`py-2 rounded-lg text-sm font-medium border ${
+                        skillLevel === s && !customSkill
                           ? 'bg-primary text-white border-primary'
                           : 'bg-white text-gray-700 border-gray-200'
                       }`}
@@ -304,6 +316,25 @@ export function MemberDetailPage() {
                       {s}
                     </button>
                   ))}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                    Khác
+                  </span>
+                  <input
+                    type="text"
+                    value={customSkill}
+                    onChange={(e) => {
+                      const v = e.target.value.trim()
+                      setCustomSkill(e.target.value)
+                      if (v) setSkillLevel(v)
+                    }}
+                    placeholder="VD: 3.5, 4.0..."
+                    maxLength={10}
+                    className={`flex-1 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+                      customSkill ? 'border-primary text-primary font-semibold' : 'border-gray-200'
+                    }`}
+                  />
                 </div>
               </div>
             )}

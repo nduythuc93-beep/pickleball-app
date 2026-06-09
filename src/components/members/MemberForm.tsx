@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
 import type { Gender, Member, PlayExperience, SkillLevel } from '../../types/database'
-import { PLAY_EXPERIENCE_LABEL } from '../../types/database'
+import { PLAY_EXPERIENCE_LABEL, SKILL_PRESETS } from '../../types/database'
 
 type Props = {
   open: boolean
@@ -17,7 +17,6 @@ type Props = {
   onSaved: () => void
 }
 
-const SKILLS: SkillLevel[] = ['A', 'B+', 'B-', 'C']
 const EXPERIENCES: PlayExperience[] = ['beginner', 'under_6m', 'over_6m']
 
 export function MemberForm({ open, onClose, member, onSaved }: Props) {
@@ -29,7 +28,8 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
   const [phone, setPhone] = useState('')
   const [zaloId, setZaloId] = useState('')
   const [bio, setBio] = useState('')
-  const [skillLevel, setSkillLevel] = useState<SkillLevel>('C')
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>('2.0')
+  const [customSkill, setCustomSkill] = useState('')
   const [experience, setExperience] = useState<PlayExperience | ''>('')
   const [gender, setGender] = useState<Gender | ''>('')
   const [isAdmin, setIsAdmin] = useState(false)
@@ -45,7 +45,9 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       setPhone(member?.phone ?? '')
       setZaloId(member?.zalo_id ?? '')
       setBio(member?.bio ?? '')
-      setSkillLevel(member?.skill_level ?? 'C')
+      const initSkill = member?.skill_level ?? '2.0'
+      setSkillLevel(initSkill)
+      setCustomSkill(SKILL_PRESETS.includes(initSkill) ? '' : initSkill)
       setExperience(member?.play_experience ?? '')
       setGender(member?.gender ?? '')
       setIsAdmin(member?.is_admin ?? false)
@@ -64,6 +66,11 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       toast.error('Số điện thoại là bắt buộc (9-15 ký tự)')
       return
     }
+    const finalSkill = (customSkill.trim() || skillLevel).trim()
+    if (!finalSkill || finalSkill.length > 10) {
+      toast.error('Trình độ không hợp lệ (1-10 ký tự)')
+      return
+    }
     setSaving(true)
     const payload = {
       full_name: fullName.trim(),
@@ -73,7 +80,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       bio: bio.trim() || null,
       play_experience: experience || null,
       gender: gender || null,
-      skill_level: skillLevel,
+      skill_level: finalSkill,
       is_admin: isAdmin,
       is_coach: isCoach,
       is_host: isHost,
@@ -82,7 +89,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
 
     let error
     if (isEdit && member) {
-      const skillChanged = skillLevel !== member.skill_level
+      const skillChanged = finalSkill !== member.skill_level
       const updates: Record<string, unknown> = { ...payload }
       if (skillChanged) {
         updates.skill_updated_by = user?.id ?? null
@@ -230,16 +237,19 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
 
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Skill level (đánh giá bởi Host/Coach/Admin)
+            Trình độ DUPR <span className="text-xs text-gray-500">(Host/Coach/Admin chấm)</span>
           </label>
-          <div className="flex gap-2">
-            {SKILLS.map((s) => (
+          <div className="grid grid-cols-4 gap-1.5">
+            {SKILL_PRESETS.map((s) => (
               <button
                 key={s}
                 type="button"
-                onClick={() => setSkillLevel(s)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
-                  skillLevel === s
+                onClick={() => {
+                  setSkillLevel(s)
+                  setCustomSkill('')
+                }}
+                className={`py-2 rounded-lg text-sm font-medium border ${
+                  skillLevel === s && !customSkill
                     ? 'bg-primary text-white border-primary'
                     : 'bg-white text-gray-700 border-gray-200'
                 }`}
@@ -247,6 +257,25 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
                 {s}
               </button>
             ))}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+              Khác
+            </span>
+            <input
+              type="text"
+              value={customSkill}
+              onChange={(e) => {
+                const v = e.target.value.trim()
+                setCustomSkill(e.target.value)
+                if (v) setSkillLevel(v)
+              }}
+              placeholder="VD: 3.5, 4.0..."
+              maxLength={10}
+              className={`flex-1 px-3 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+                customSkill ? 'border-primary text-primary font-semibold' : 'border-gray-200'
+              }`}
+            />
           </div>
         </div>
 

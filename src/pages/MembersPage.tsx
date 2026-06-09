@@ -10,9 +10,9 @@ import { supabase } from '../lib/supabase'
 import { cn } from '../lib/cn'
 import { useAuth } from '../hooks/useAuth'
 import type { Member, PlayExperience, SkillLevel } from '../types/database'
-import { PLAY_EXPERIENCE_LABEL } from '../types/database'
+import { PLAY_EXPERIENCE_LABEL, SKILL_PRESETS } from '../types/database'
 
-const SKILL_OPTIONS: Array<SkillLevel | 'all'> = ['all', 'A', 'B+', 'B-', 'C']
+const SKILL_OPTIONS: Array<SkillLevel | 'all'> = ['all', ...SKILL_PRESETS]
 type RoleFilter = 'all' | 'admin' | 'coach' | 'host'
 const ROLE_OPTIONS: Array<{ key: RoleFilter; label: string }> = [
   { key: 'all', label: 'Tất cả' },
@@ -64,11 +64,18 @@ export function MembersPage() {
     [members, me]
   )
 
-  // Other members (exclude self) + filter
-  const others = useMemo(() => {
+  // Apply filters (skill, role, query, exclude self)
+  const filtered = useMemo(() => {
     return members.filter((m) => {
       if (m.id === me?.id) return false
-      if (skillFilter !== 'all' && m.skill_level !== skillFilter) return false
+      // Host/Coach skip skill filter (vì họ không hiển thị skill)
+      if (
+        skillFilter !== 'all' &&
+        m.skill_level !== skillFilter &&
+        !m.is_host &&
+        !m.is_coach
+      )
+        return false
       if (roleFilter === 'admin' && !m.is_admin) return false
       if (roleFilter === 'coach' && !m.is_coach) return false
       if (roleFilter === 'host' && !m.is_host) return false
@@ -79,6 +86,16 @@ export function MembersPage() {
       return true
     })
   }, [members, query, skillFilter, roleFilter, me])
+
+  // Tách Host & Coach ra section riêng, hiển thị nổi bật
+  const hostsCoaches = useMemo(
+    () => filtered.filter((m) => m.is_host || m.is_coach),
+    [filtered]
+  )
+  const others = useMemo(
+    () => filtered.filter((m) => !m.is_host && !m.is_coach),
+    [filtered]
+  )
 
   return (
     <div>
@@ -138,6 +155,23 @@ export function MembersPage() {
           ))}
         </div>
       </div>
+
+      {/* Host & HLV section — nổi bật */}
+      {!loading && hostsCoaches.length > 0 && (
+        <>
+          <div className="px-4 pt-4 pb-1.5 flex items-center gap-1.5">
+            <span className="text-base">👑</span>
+            <h2 className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+              Host & HLV ({hostsCoaches.length})
+            </h2>
+          </div>
+          <div className="px-4 grid grid-cols-2 gap-2 pb-2">
+            {hostsCoaches.map((m) => (
+              <HostCoachCard key={m.id} member={m} />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Section header */}
       <div className="px-4 pt-4 pb-1.5">
@@ -240,6 +274,7 @@ function HeroMyCard({ member }: { member: Member }) {
 }
 
 function CompactMemberRow({ member }: { member: Member }) {
+  const hideSkill = member.is_host || member.is_coach
   return (
     <Link
       to={`/members/${member.id}`}
@@ -259,8 +294,45 @@ function CompactMemberRow({ member }: { member: Member }) {
           </div>
         )}
       </div>
-      <SkillBadge level={member.skill_level} size="sm" />
+      {!hideSkill && <SkillBadge level={member.skill_level} size="sm" />}
       <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+    </Link>
+  )
+}
+
+function HostCoachCard({ member }: { member: Member }) {
+  const role = member.is_host ? 'Host' : 'HLV'
+  const roleIcon = member.is_host ? '👑' : '🎓'
+  const gradient = member.is_host
+    ? 'from-amber-50 to-orange-50 border-amber-200'
+    : 'from-blue-50 to-cyan-50 border-blue-200'
+  const roleColor = member.is_host ? 'text-amber-700' : 'text-blue-700'
+
+  return (
+    <Link
+      to={`/members/${member.id}`}
+      className={cn(
+        'bg-gradient-to-br border rounded-2xl p-3 hover:shadow-md transition-shadow relative overflow-hidden',
+        gradient
+      )}
+    >
+      <div className="absolute -right-3 -top-3 text-3xl opacity-20">{roleIcon}</div>
+      <div className="flex flex-col items-center text-center gap-1.5">
+        <MemberAvatar member={member} size="md" className="ring-2 ring-white shadow-sm" />
+        <div className="min-w-0 w-full">
+          <p className="text-sm font-bold text-gray-900 truncate">{member.full_name}</p>
+          <p className={cn('text-[10px] font-bold uppercase tracking-wider', roleColor)}>
+            {roleIcon} {role}
+            {member.is_host && member.is_coach && ' · HLV'}
+          </p>
+        </div>
+        {(member.total_points ?? 0) > 0 && (
+          <div className="flex items-center gap-1 text-[10px] text-gray-600">
+            <Award className="w-2.5 h-2.5" />
+            <span className="font-semibold">{member.total_points}đ</span>
+          </div>
+        )}
+      </div>
     </Link>
   )
 }

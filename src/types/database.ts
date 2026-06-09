@@ -1,4 +1,11 @@
-export type SkillLevel = 'A' | 'B+' | 'B-' | 'C'
+/**
+ * Skill level theo DUPR-style.
+ * Preset: '2.0' | '2.5' | '2.75' | '3.0+' nhưng Admin/Coach có thể nhập
+ * custom (e.g. '3.5', '4.0', '2.25').
+ */
+export type SkillLevel = string
+
+export const SKILL_PRESETS: SkillLevel[] = ['2.0', '2.5', '2.75', '3.0+']
 
 export type PlayExperience = 'beginner' | 'under_6m' | 'over_6m'
 

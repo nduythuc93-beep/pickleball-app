@@ -166,6 +166,9 @@ export type SessionCheckin = {
   paid_at: string | null
   paid_marked_by: string | null
   checked_in_by: string | null
+  is_warned: boolean
+  warned_at: string | null
+  warned_by: string | null
 }
 
 // ========================================

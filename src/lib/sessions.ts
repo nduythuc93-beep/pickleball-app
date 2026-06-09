@@ -81,8 +81,8 @@ export function getCheckinWindow(session: PlaySession): {
 /**
  * Cancel window:
  * - Free cancel: now < session.start_time - 3h
- * - Penalty cancel (-5đ): session.start - 3h < now < session.end
- * - No cancel: now > session.end
+ * - Penalty cancel (-10đ): session.start - 3h ≤ now ≤ session.start + 1h
+ * - No cancel: now > session.start + 1h
  */
 export function getCancelWindow(session: PlaySession): {
   canCancel: boolean
@@ -91,17 +91,21 @@ export function getCancelWindow(session: PlaySession): {
 } {
   const now = new Date()
   const start = new Date(`${session.session_date}T${session.start_time}`)
-  const end = new Date(`${session.session_date}T${session.end_time}`)
-  const penaltyThreshold = new Date(start.getTime() - 3 * 60 * 60 * 1000)
+  const penaltyThreshold = new Date(start.getTime() - 3 * 60 * 60 * 1000) // -3h
+  const cancelDeadline = new Date(start.getTime() + 1 * 60 * 60 * 1000) // +1h
 
-  if (now > end) {
-    return { canCancel: false, withPenalty: false, reason: 'Buổi đã qua, không huỷ được' }
+  if (now > cancelDeadline) {
+    return {
+      canCancel: false,
+      withPenalty: false,
+      reason: 'Đã quá 1h sau giờ bắt đầu — không thể huỷ',
+    }
   }
   if (now > penaltyThreshold) {
     return {
       canCancel: true,
       withPenalty: true,
-      reason: 'Huỷ sát giờ — sẽ bị trừ 5 điểm (nếu có)',
+      reason: 'Huỷ gần giờ — sẽ bị trừ 10 điểm (nếu có)',
     }
   }
   return { canCancel: true, withPenalty: false }

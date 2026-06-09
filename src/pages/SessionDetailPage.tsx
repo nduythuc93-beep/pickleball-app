@@ -10,6 +10,7 @@ import {
   Plus,
   DollarSign,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -156,7 +157,7 @@ export function SessionDetailPage() {
       return
     }
     const msg = cancelWindow.withPenalty
-      ? '⚠️ Huỷ sát giờ (< 3h trước session) — bạn sẽ bị TRỪ 5 điểm (nếu có). Tiếp tục?'
+      ? '⚠️ Huỷ gần giờ — bạn sẽ bị TRỪ 10 điểm (nếu có). Tiếp tục?'
       : 'Huỷ check-in?'
     if (!confirm(msg)) return
 
@@ -195,6 +196,41 @@ export function SessionDetailPage() {
       return
     }
     toast.success(newPaid ? 'Đã đánh dấu trả' : 'Đã bỏ đánh dấu')
+    load()
+  }
+
+  async function onWarnCheckin(c: CheckinRow) {
+    if (!canManage) return
+    if (c.is_warned) {
+      // Undo warning (admin only)
+      if (!isAdmin) {
+        toast.error('Chỉ admin được undo cảnh cáo')
+        return
+      }
+      if (!confirm(`Bỏ cảnh cáo cho ${c.members?.full_name ?? '?'}? Sẽ hoàn lại điểm bị trừ.`)) return
+      const { data, error } = await supabase.rpc('undo_checkin_warning', {
+        p_checkin_id: c.id,
+      })
+      if (error) {
+        toast.error(friendlyError(error))
+        return
+      }
+      const refunded = (data as { refunded?: number } | null)?.refunded ?? 0
+      toast.success(`Đã undo cảnh cáo · hoàn ${refunded} điểm`)
+      load()
+      return
+    }
+    const memberName = c.members?.full_name ?? '?'
+    if (!confirm(`Cảnh cáo ${memberName} (đã check-in nhưng không tham gia)? Sẽ trừ 50% điểm session.`)) return
+    const { data, error } = await supabase.rpc('mark_checkin_warned', {
+      p_checkin_id: c.id,
+    })
+    if (error) {
+      toast.error(friendlyError(error))
+      return
+    }
+    const penalty = (data as { penalty?: number } | null)?.penalty ?? 0
+    toast.error(`Đã cảnh cáo ${memberName} · trừ ${penalty} điểm`, { duration: 4000 })
     load()
   }
 
@@ -356,11 +392,11 @@ export function SessionDetailPage() {
                     cancelWindow.withPenalty ? 'text-amber-700 font-semibold' : 'text-red-600'
                   )}
                 >
-                  {cancelWindow.withPenalty ? '⚠️ Huỷ check-in (sẽ trừ 5đ)' : 'Huỷ check-in'}
+                  {cancelWindow.withPenalty ? '⚠️ Huỷ check-in (trừ 10đ)' : 'Huỷ check-in'}
                 </button>
                 {cancelWindow.withPenalty && (
                   <p className="text-[10px] text-amber-600 mt-1">
-                    Sát giờ {'<'} 3h. Huỷ tự do trước đó.
+                    Sát giờ. Huỷ tự do trước 3h trước session start.
                   </p>
                 )}
               </>
@@ -429,9 +465,17 @@ export function SessionDetailPage() {
                       <div className="w-8 h-8 rounded-full bg-gray-200" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {c.members?.full_name ?? '?'}
-                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium truncate">
+                          {c.members?.full_name ?? '?'}
+                        </p>
+                        {c.is_warned && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-700 rounded font-bold whitespace-nowrap flex items-center gap-0.5">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            ĐÃ CẢNH CÁO
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-gray-500">
                         {new Date(c.checked_in_at).toLocaleTimeString('vi-VN', {
                           hour: '2-digit',
@@ -458,6 +502,24 @@ export function SessionDetailPage() {
                         <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-bold">
                           Đã trả
                         </span>
+                      )}
+                      {canManage && (
+                        <button
+                          onClick={() => onWarnCheckin(c)}
+                          className={cn(
+                            'p-1.5 rounded-lg',
+                            c.is_warned
+                              ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                              : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                          )}
+                          title={
+                            c.is_warned
+                              ? 'Đã cảnh cáo · click để undo (admin)'
+                              : 'Cảnh cáo (check-in nhưng không tham gia)'
+                          }
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                        </button>
                       )}
                       {canManage && (
                         <button

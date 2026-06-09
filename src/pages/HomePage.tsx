@@ -145,9 +145,12 @@ export function HomePage() {
         supabase
           .from('play_sessions')
           .select('*')
-          .eq('session_date', today)
+          .gte('session_date', today)
+          .lte('session_date', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10))
           .neq('status', 'cancelled')
-          .order('start_time'),
+          .order('session_date')
+          .order('start_time')
+          .limit(20),
         supabase.from('activity_types').select('*').order('display_order'),
         supabase.from('session_checkins').select('session_id'),
         supabase.from('session_checkins').select('session_id').eq('member_id', me.id),
@@ -265,50 +268,58 @@ export function HomePage() {
       {/* Thông báo */}
       <AnnouncementBanner />
 
-      {/* Buổi đánh hôm nay — chỉ hiện sessions chưa end */}
+      {/* Sự kiện sắp tới — next upcoming sessions (auto cuộn sang buổi sau khi end) */}
       {(() => {
         const nowMs = Date.now()
-        const upcomingToday = todaySessions.filter((s) => {
+        const upcoming = todaySessions.filter((s) => {
           const end = new Date(`${s.session_date}T${s.end_time}`).getTime()
           return end > nowMs
         })
-        if (upcomingToday.length === 0) return null
+        if (upcoming.length === 0) return null
+
+        // Tìm buổi social gần nhất chưa end (làm hero)
+        const nextSocial = upcoming.find((s) => s.activity_type === 'social')
+        const nextSocialDate = nextSocial?.session_date
+
+        // Mini grid: training + ball_machine CÙNG NGÀY với social hero
+        const sameDayOthers = nextSocialDate
+          ? upcoming.filter(
+              (s) => s.session_date === nextSocialDate && s.activity_type !== 'social'
+            )
+          : upcoming.filter((s) => s.activity_type !== 'social').slice(0, 2)
+
+        // Hiển thị buổi social hero + same-day others
         return (
           <div className="px-4 pt-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Buổi đánh hôm nay
+                Sự kiện sắp tới
               </h2>
               <Link to="/events" className="text-xs text-primary font-semibold">
                 Xem tất cả →
               </Link>
             </div>
             <div className="space-y-2">
-              {upcomingToday
-                .filter((s) => s.activity_type === 'social')
-                .map((s) => (
-                  <SessionCardHero
-                    key={s.id}
-                    session={s}
-                    activityType={activityTypes.find((a) => a.key === s.activity_type)}
-                    checkinCount={sessionCheckinCounts[s.id] ?? 0}
-                    hasCheckedIn={mySessionCheckins.has(s.id)}
-                  />
-                ))}
-              {upcomingToday.filter((s) => s.activity_type !== 'social').length > 0 && (
+              {nextSocial && (
+                <SessionCardHero
+                  session={nextSocial}
+                  activityType={activityTypes.find((a) => a.key === nextSocial.activity_type)}
+                  checkinCount={sessionCheckinCounts[nextSocial.id] ?? 0}
+                  hasCheckedIn={mySessionCheckins.has(nextSocial.id)}
+                />
+              )}
+              {sameDayOthers.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
-                  {upcomingToday
-                    .filter((s) => s.activity_type !== 'social')
-                    .map((s) => (
-                      <SessionCardMini
-                        key={s.id}
-                        session={s}
-                        activityType={activityTypes.find((a) => a.key === s.activity_type)}
-                        checkinCount={sessionCheckinCounts[s.id] ?? 0}
-                        hasCheckedIn={mySessionCheckins.has(s.id)}
-                      />
-                    ))}
+                  {sameDayOthers.map((s) => (
+                    <SessionCardMini
+                      key={s.id}
+                      session={s}
+                      activityType={activityTypes.find((a) => a.key === s.activity_type)}
+                      checkinCount={sessionCheckinCounts[s.id] ?? 0}
+                      hasCheckedIn={mySessionCheckins.has(s.id)}
+                    />
+                  ))}
                 </div>
               )}
             </div>

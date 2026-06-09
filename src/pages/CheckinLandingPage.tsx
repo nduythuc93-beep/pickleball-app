@@ -22,7 +22,7 @@ import {
   formatVnd,
 } from '../lib/sessions'
 import { cn } from '../lib/cn'
-import type { ActivityType, PlaySession, Tournament } from '../types/database'
+import type { ActivityType, PlaySession, Reward, Tournament } from '../types/database'
 
 const REFERRAL_OPTIONS = [
   'Bạn giới thiệu',
@@ -37,6 +37,7 @@ export function CheckinLandingPage() {
   const [todaySessions, setTodaySessions] = useState<PlaySession[]>([])
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
+  const [rewards, setRewards] = useState<Reward[]>([])
   const [mode, setMode] = useState<'landing' | 'walkin'>('landing')
   const [done, setDone] = useState(false)
 
@@ -50,7 +51,7 @@ export function CheckinLandingPage() {
     async function loadData() {
       const todayIso = new Date().toISOString().slice(0, 10)
       const in7DaysIso = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
-      const [{ data: sess }, { data: tour }, { data: at }] = await Promise.all([
+      const [{ data: sess }, { data: tour }, { data: at }, { data: rew }] = await Promise.all([
         supabase
           .from('play_sessions')
           .select('*')
@@ -67,10 +68,17 @@ export function CheckinLandingPage() {
           .order('event_date', { ascending: true, nullsFirst: false })
           .limit(3),
         supabase.from('activity_types').select('*').order('display_order'),
+        supabase
+          .from('rewards')
+          .select('*')
+          .eq('is_active', true)
+          .order('cost_points')
+          .limit(4),
       ])
       setTodaySessions((sess ?? []) as PlaySession[])
       setTournaments((tour ?? []) as Tournament[])
       setActivityTypes((at ?? []) as ActivityType[])
+      setRewards((rew ?? []) as Reward[])
     }
     loadData()
   }, [])
@@ -222,6 +230,51 @@ export function CheckinLandingPage() {
                   <Lock className="w-6 h-6 text-primary" />
                   <p className="text-xs font-bold text-gray-900">Đăng ký thành viên</p>
                   <p className="text-[10px] text-gray-500">để xem chi tiết giải đấu</p>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Rewards — LOCKED */}
+        <div className="px-4 mt-5">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Gift className="w-3 h-3" />
+            Đổi điểm nhận quà
+          </h2>
+          {rewards.length === 0 ? (
+            <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">
+              Chưa có quà nào
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-2 blur-sm pointer-events-none select-none">
+                {rewards.slice(0, 4).map((r) => (
+                  <div key={r.id} className="bg-white rounded-xl p-2 shadow-sm">
+                    <div className="aspect-square bg-gray-100 rounded mb-1.5 flex items-center justify-center">
+                      {r.image_url ? (
+                        <img
+                          src={r.image_url}
+                          alt={r.name}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      ) : (
+                        <Gift className="w-6 h-6 text-gray-300" />
+                      )}
+                    </div>
+                    <p className="text-xs font-semibold truncate">{r.name}</p>
+                    <p className="text-[10px] text-primary font-bold">{r.cost_points}đ</p>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Link
+                  to="/signup"
+                  className="bg-white rounded-2xl shadow-xl border-2 border-primary px-4 py-3 flex flex-col items-center gap-1 hover:scale-105 transition-transform"
+                >
+                  <Lock className="w-6 h-6 text-primary" />
+                  <p className="text-xs font-bold text-gray-900">Đăng ký thành viên</p>
+                  <p className="text-[10px] text-gray-500">để tích điểm + đổi quà</p>
                 </Link>
               </div>
             </div>

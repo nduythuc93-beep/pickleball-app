@@ -204,6 +204,21 @@ export type Announcement = {
 }
 
 // ========================================
+// NOTIFICATIONS
+// ========================================
+
+export type Notification = {
+  id: string
+  recipient_member_id: string
+  type: string
+  title: string
+  body: string | null
+  related_url: string | null
+  is_read: boolean
+  created_at: string
+}
+
+// ========================================
 // REWARDS
 // ========================================
 

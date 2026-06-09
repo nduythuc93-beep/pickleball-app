@@ -1,14 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { Gift, Sparkles, Clock, MapPin, ArrowRight, UserCheck } from 'lucide-react'
+import {
+  Gift,
+  Clock,
+  ArrowRight,
+  UserCheck,
+  Lock,
+  Trophy,
+  Calendar,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { useAuth } from '../hooks/useAuth'
-import { formatTime, formatVnd } from '../lib/sessions'
-import type { PlaySession } from '../types/database'
+import {
+  ACTIVITY_STYLE,
+  formatDateShort,
+  formatTime,
+  formatVnd,
+} from '../lib/sessions'
+import { cn } from '../lib/cn'
+import type { ActivityType, PlaySession, Tournament } from '../types/database'
 
 const REFERRAL_OPTIONS = [
   'Bạn giới thiệu',
@@ -20,7 +34,9 @@ const REFERRAL_OPTIONS = [
 
 export function CheckinLandingPage() {
   const { session: authSession, loading } = useAuth()
-  const [todaySession, setTodaySession] = useState<PlaySession | null>(null)
+  const [todaySessions, setTodaySessions] = useState<PlaySession[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
   const [mode, setMode] = useState<'landing' | 'walkin'>('landing')
   const [done, setDone] = useState(false)
 
@@ -31,22 +47,34 @@ export function CheckinLandingPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    async function loadTodaySession() {
-      const today = new Date().toISOString().slice(0, 10)
-      const { data } = await supabase
-        .from('play_sessions')
-        .select('*')
-        .eq('session_date', today)
-        .eq('activity_type', 'social')
-        .neq('status', 'cancelled')
-        .limit(1)
-        .maybeSingle()
-      setTodaySession(data as PlaySession | null)
+    async function loadData() {
+      const todayIso = new Date().toISOString().slice(0, 10)
+      const in7DaysIso = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+      const [{ data: sess }, { data: tour }, { data: at }] = await Promise.all([
+        supabase
+          .from('play_sessions')
+          .select('*')
+          .gte('session_date', todayIso)
+          .lte('session_date', in7DaysIso)
+          .neq('status', 'cancelled')
+          .order('session_date')
+          .order('start_time')
+          .limit(6),
+        supabase
+          .from('tournaments')
+          .select('*')
+          .in('status', ['open', 'ongoing'])
+          .order('event_date', { ascending: true, nullsFirst: false })
+          .limit(3),
+        supabase.from('activity_types').select('*').order('display_order'),
+      ])
+      setTodaySessions((sess ?? []) as PlaySession[])
+      setTournaments((tour ?? []) as Tournament[])
+      setActivityTypes((at ?? []) as ActivityType[])
     }
-    loadTodaySession()
+    loadData()
   }, [])
 
-  // Nếu đã login, redirect về home
   if (!loading && authSession) {
     return <Navigate to="/home" replace />
   }
@@ -62,11 +90,16 @@ export function CheckinLandingPage() {
       return
     }
     setSubmitting(true)
+    // Lấy social session hôm nay (nếu có)
+    const todayIso = new Date().toISOString().slice(0, 10)
+    const todaySocial = todaySessions.find(
+      (s) => s.session_date === todayIso && s.activity_type === 'social'
+    )
     const { error } = await supabase.rpc('walk_in_checkin', {
       p_full_name: fullName.trim(),
       p_phone: phone.trim(),
       p_referral_source: referral || null,
-      p_session_id: todaySession?.id ?? null,
+      p_session_id: todaySocial?.id ?? null,
     })
     setSubmitting(false)
     if (error) {
@@ -76,36 +109,126 @@ export function CheckinLandingPage() {
     setDone(true)
   }
 
+  // Done screen — show preview sessions + locked tournaments
   if (done) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white p-6 flex items-center">
-        <div className="max-w-sm w-full mx-auto bg-white rounded-2xl shadow-lg p-6 text-center">
-          <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-emerald-100 flex items-center justify-center">
-            <UserCheck className="w-9 h-9 text-emerald-600" />
+      <div className="min-h-screen bg-gray-50 pb-10">
+        {/* Success header */}
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 text-center">
+          <div className="w-14 h-14 mx-auto mb-2 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+            <UserCheck className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold mb-1">Đã ghi nhận tham gia 🎉</h2>
-          <p className="text-sm text-gray-600 mb-5">
-            Chào <strong>{fullName}</strong>, chúc anh/chị buổi đánh vui vẻ!
+          <h1 className="text-xl font-bold">Đã ghi nhận tham gia 🎉</h1>
+          <p className="text-sm opacity-95 mt-1">
+            Chào <strong>{fullName}</strong>, chúc anh/chị đánh vui vẻ!
           </p>
+        </div>
 
-          {/* Soft sell signup */}
-          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4 text-left mb-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-orange-700 mb-2">
-              ⚡ Đăng ký NGAY để nhận
-            </p>
-            <ul className="space-y-1 text-sm text-gray-700">
-              <li>🎁 1 chai nước miễn phí tại buổi này</li>
-              <li>🎯 20 điểm thưởng khởi đầu</li>
-              <li>🎾 Tích đủ 30đ = vệ sinh vợt free</li>
-              <li>📅 Đặt áo CLB + đăng ký giải đấu</li>
-            </ul>
-          </div>
-
-          <Link to="/signup" className="block">
-            <Button className="w-full">
-              Đăng ký miễn phí (30 giây) <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
+        {/* Signup CTA — at top to convert */}
+        <div className="px-4 -mt-3 mb-3">
+          <Link
+            to="/signup"
+            className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden"
+          >
+            <Gift className="absolute -right-4 -bottom-4 w-24 h-24 opacity-15" />
+            <div className="relative">
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-95">
+                ⚡ Mở khoá đầy đủ tính năng
+              </p>
+              <h3 className="text-lg font-bold mt-1">Đăng ký thành viên (30 giây)</h3>
+              <ul className="text-xs mt-2 space-y-0.5 opacity-95">
+                <li>🎁 Free 1 chai nước</li>
+                <li>🎯 +20 điểm khởi đầu</li>
+                <li>🏆 Mở khoá Giải đấu + tích điểm đổi quà</li>
+              </ul>
+              <div className="mt-3 inline-flex items-center gap-1 bg-white/25 backdrop-blur px-3 py-1 rounded-full text-xs font-bold">
+                Đăng ký ngay <ArrowRight className="w-3 h-3" />
+              </div>
+            </div>
           </Link>
+        </div>
+
+        {/* Sự kiện gần nhất — visible cho walk-in */}
+        <div className="px-4 mt-4">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            Sự kiện gần nhất
+          </h2>
+          {todaySessions.length === 0 ? (
+            <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">
+              Chưa có sự kiện sắp tới
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {todaySessions.slice(0, 4).map((s) => {
+                const at = activityTypes.find((a) => a.key === s.activity_type)
+                const style = ACTIVITY_STYLE[s.activity_type]
+                return (
+                  <div key={s.id} className="bg-white rounded-xl p-3 flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'w-11 h-11 rounded-lg flex items-center justify-center text-xl flex-shrink-0',
+                        style.iconBg
+                      )}
+                    >
+                      {at?.icon ?? '🏓'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{at?.label}</p>
+                      <p className="text-xs text-gray-500">
+                        {formatDateShort(s.session_date)} · {formatTime(s.start_time)}-
+                        {formatTime(s.end_time)} · {s.venue}
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-gray-700">
+                      {formatVnd(s.price_vnd)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Tournaments — LOCKED */}
+        <div className="px-4 mt-5">
+          <h2 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Trophy className="w-3 h-3" />
+            Giải đấu CLB
+          </h2>
+          {tournaments.length === 0 ? (
+            <div className="bg-white rounded-xl p-4 text-center text-xs text-gray-500">
+              Chưa có giải đấu sắp diễn ra
+            </div>
+          ) : (
+            <div className="space-y-2 relative">
+              <div className="space-y-2 blur-sm pointer-events-none select-none">
+                {tournaments.slice(0, 2).map((t) => (
+                  <div key={t.id} className="bg-white rounded-xl p-3">
+                    <p className="font-semibold text-sm">{t.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t.event_date && new Date(t.event_date).toLocaleDateString('vi-VN')}
+                      {t.venue && ` · ${t.venue}`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {/* Lock overlay */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Link
+                  to="/signup"
+                  className="bg-white rounded-2xl shadow-xl border-2 border-primary px-4 py-3 flex flex-col items-center gap-1 hover:scale-105 transition-transform"
+                >
+                  <Lock className="w-6 h-6 text-primary" />
+                  <p className="text-xs font-bold text-gray-900">Đăng ký thành viên</p>
+                  <p className="text-[10px] text-gray-500">để xem chi tiết giải đấu</p>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 mt-5 text-center">
           <button
             onClick={() => {
               setDone(false)
@@ -114,15 +237,16 @@ export function CheckinLandingPage() {
               setPhone('')
               setReferral('')
             }}
-            className="mt-3 text-xs text-gray-500 underline"
+            className="text-xs text-gray-500 underline"
           >
-            Để sau, tôi đánh xong rồi tính
+            ← Về trang chính
           </button>
         </div>
       </div>
     )
   }
 
+  // Walk-in form
   if (mode === 'walkin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white p-6">
@@ -140,7 +264,9 @@ export function CheckinLandingPage() {
                 👋
               </div>
               <h1 className="text-xl font-bold">Đánh Social Vãng Lai</h1>
-              <p className="text-xs text-gray-500 mt-1">Chỉ cần 2 thông tin</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Chỉ 2 thông tin — chưa cần tạo tài khoản
+              </p>
             </div>
 
             <form onSubmit={onWalkInSubmit} className="space-y-3">
@@ -163,7 +289,7 @@ export function CheckinLandingPage() {
               />
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
-                  Bạn biết CLB qua đâu? (không bắt buộc)
+                  Bạn biết CLB qua đâu? (tuỳ chọn)
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {REFERRAL_OPTIONS.map((opt) => (
@@ -186,13 +312,6 @@ export function CheckinLandingPage() {
               <Button type="submit" loading={submitting} className="w-full !mt-4">
                 Xác nhận tham gia
               </Button>
-
-              <Link
-                to="/signup"
-                className="block text-center text-xs text-primary mt-2 underline"
-              >
-                Hoặc đăng ký để được ưu đãi hơn →
-              </Link>
             </form>
           </div>
         </div>
@@ -200,100 +319,95 @@ export function CheckinLandingPage() {
     )
   }
 
-  // Landing — 3 choices
+  // Landing — WALK-IN làm chính, signup + login secondary
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white p-4">
       <div className="max-w-sm w-full mx-auto py-6">
-        {/* Header */}
         <div className="text-center mb-5">
           <div className="text-5xl mb-2">🏓</div>
           <h1 className="text-2xl font-bold text-gray-900">CLB Pickleball</h1>
           <p className="text-sm text-gray-500 mt-1">Chào mừng anh/chị đến sân!</p>
         </div>
 
-        {/* Today's session preview */}
-        {todaySession && (
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white shadow-md mb-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-90">
-              ★ Hoạt động hôm nay
+        {/* PRIMARY — Walk-in (LỚN NHẤT) */}
+        <button
+          onClick={() => setMode('walkin')}
+          className="w-full block bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 rounded-2xl p-5 text-white shadow-xl mb-3 relative overflow-hidden hover:shadow-2xl transition-shadow"
+        >
+          <div className="absolute -right-4 -top-4 text-6xl opacity-20">🏓</div>
+          <div className="relative text-left">
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-95">
+              ⚡ Đánh ngay — không cần tạo tài khoản
             </p>
-            <h2 className="text-lg font-bold mt-1">🏓 Đánh Social</h2>
-            <div className="flex items-center gap-3 text-xs mt-2 opacity-90">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatTime(todaySession.start_time)}-{formatTime(todaySession.end_time)}
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {todaySession.venue}
-              </span>
-              <span className="font-bold">{formatVnd(todaySession.price_vnd)}</span>
+            <h2 className="text-2xl font-bold mt-1">Tham gia Vãng lai</h2>
+            <p className="text-xs mt-1.5 opacity-90">
+              Chỉ cần Họ tên + SĐT (15 giây)
+            </p>
+            <div className="mt-3 inline-flex items-center gap-1 bg-white text-emerald-700 px-4 py-2 rounded-full text-sm font-bold shadow">
+              Bắt đầu <ArrowRight className="w-4 h-4" />
+            </div>
+          </div>
+        </button>
+
+        {/* SECONDARY — Signup */}
+        <Link
+          to="/signup"
+          className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-4 text-white shadow-md mb-3 relative overflow-hidden"
+        >
+          <Gift className="absolute -right-4 -bottom-4 w-20 h-20 opacity-15" />
+          <div className="relative">
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-90">
+              🎁 Tham gia thành viên
+            </p>
+            <h3 className="text-base font-bold mt-0.5">Đăng ký miễn phí</h3>
+            <p className="text-[11px] mt-1 opacity-90">
+              Free chai nước · +20đ · Đổi quà · Xem giải đấu
+            </p>
+            <div className="mt-2 text-xs font-bold flex items-center gap-1">
+              Đăng ký <ArrowRight className="w-3 h-3" />
+            </div>
+          </div>
+        </Link>
+
+        {/* SECONDARY — Login (smallest) */}
+        <Link
+          to="/login"
+          className="block bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:border-primary"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-700">
+              Đã có tài khoản? <span className="font-bold text-primary">Đăng nhập</span>
+            </p>
+            <ArrowRight className="w-4 h-4 text-primary" />
+          </div>
+        </Link>
+
+        {/* Today preview at bottom */}
+        {todaySessions.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">
+              Sự kiện sắp tới
+            </h3>
+            <div className="space-y-1.5">
+              {todaySessions.slice(0, 3).map((s) => {
+                const at = activityTypes.find((a) => a.key === s.activity_type)
+                return (
+                  <div key={s.id} className="bg-white rounded-lg px-3 py-2 flex items-center gap-2 text-xs">
+                    <span className="text-base">{at?.icon}</span>
+                    <span className="flex-1 truncate">
+                      <strong>{at?.label}</strong> · {formatDateShort(s.session_date)}{' '}
+                      {formatTime(s.start_time)}
+                    </span>
+                    <span className="flex items-center gap-0.5 text-gray-500">
+                      <Clock className="w-2.5 h-2.5" />
+                      {formatTime(s.end_time)}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
-
-        {/* Choice 1: Login */}
-        <Link
-          to="/login"
-          className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:border-primary transition-colors mb-3"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                ✓ Tôi đã có tài khoản
-              </p>
-              <p className="text-sm font-bold text-gray-900 mt-0.5">
-                Đăng nhập + Check-in
-              </p>
-            </div>
-            <ArrowRight className="w-5 h-5 text-primary" />
-          </div>
-        </Link>
-
-        {/* Choice 2: Signup (HIGHLIGHT) */}
-        <Link
-          to="/signup"
-          className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg mb-3 relative overflow-hidden"
-        >
-          <Gift className="absolute -right-6 -bottom-6 w-28 h-28 opacity-15" />
-          <div className="relative">
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-95 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Khuyến mãi member
-            </p>
-            <h3 className="text-lg font-bold mt-1">Đăng ký miễn phí (30 giây)</h3>
-            <ul className="text-xs mt-2 space-y-1 opacity-95">
-              <li>🎁 Free 1 chai nước tại buổi này</li>
-              <li>🎯 Tặng 20 điểm khởi đầu</li>
-              <li>🎾 Tích điểm đổi quà mỗi lần đánh</li>
-              <li>📅 Xem lịch đặt áo + giải CLB</li>
-            </ul>
-            <div className="mt-3 inline-flex items-center gap-1 bg-white/25 backdrop-blur px-3 py-1 rounded-full text-xs font-bold">
-              Đăng ký ngay <ArrowRight className="w-3 h-3" />
-            </div>
-          </div>
-        </Link>
-
-        {/* Choice 3: Walk-in */}
-        <button
-          onClick={() => setMode('walkin')}
-          className="block w-full bg-gray-100 rounded-2xl p-4 text-left hover:bg-gray-200 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                👋 Lần đầu đến — đánh thử
-              </p>
-              <p className="text-sm font-semibold text-gray-700 mt-0.5">
-                Đánh vãng lai
-                {todaySession && ` (${formatVnd(todaySession.price_vnd)})`}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">
-                Chỉ cần tên + SĐT
-              </p>
-            </div>
-            <ArrowRight className="w-5 h-5 text-gray-400" />
-          </div>
-        </button>
       </div>
     </div>
   )

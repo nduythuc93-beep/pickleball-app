@@ -1,5 +1,6 @@
 import { LogOut } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { NotificationBell } from '../notifications/NotificationBell'
 
 type Props = {
   title: string
@@ -14,12 +15,13 @@ export function TopBar({ title, subtitle }: Props) {
         <h1 className="text-lg font-bold text-gray-900 truncate">{title}</h1>
         {subtitle && <p className="text-xs text-gray-500 truncate">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         {member && (
-          <span className="text-sm text-gray-600 hidden sm:inline truncate max-w-[120px]">
+          <span className="text-sm text-gray-600 hidden sm:inline truncate max-w-[100px] mr-2">
             {member.full_name}
           </span>
         )}
+        <NotificationBell />
         <button
           onClick={signOut}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"

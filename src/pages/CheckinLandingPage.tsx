@@ -4,7 +4,6 @@ import {
   Gift,
   Clock,
   ArrowRight,
-  UserCheck,
   Lock,
   Trophy,
   Calendar,

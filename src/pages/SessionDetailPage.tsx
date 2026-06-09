@@ -18,7 +18,6 @@ import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
-import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import {
   ACTIVITY_STYLE,
@@ -333,23 +332,114 @@ export function SessionDetailPage() {
         </div>
       </div>
 
-      {/* Info bar */}
-      <div className="px-4 -mt-3 grid grid-cols-2 gap-2 relative z-10">
+      {/* Info bar — 3 col: Học phí | Điểm | Action (check-in/status) */}
+      <div className="px-4 -mt-3 grid grid-cols-3 gap-2 relative z-10">
         <div className="bg-white rounded-xl p-3 shadow-sm">
           <div className="text-[10px] text-gray-500 uppercase font-semibold tracking-wide">
             Học phí
           </div>
-          <div className="text-lg font-bold">{formatVnd(session.price_vnd)}</div>
+          <div className="text-base font-bold leading-tight mt-0.5">
+            {formatVnd(session.price_vnd)}
+          </div>
         </div>
         <div className="bg-white rounded-xl p-3 shadow-sm">
           <div className="text-[10px] text-gray-500 uppercase font-semibold tracking-wide">
             Điểm thưởng
           </div>
-          <div className="text-lg font-bold text-primary">
+          <div className="text-base font-bold text-primary leading-tight mt-0.5">
             {session.points_award > 0 ? `+${session.points_award} đ` : '—'}
           </div>
         </div>
+        {/* Action cell */}
+        {myCheckin ? (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide mt-0.5 leading-tight">
+              Đã CK
+            </span>
+            <span className="text-[9px] text-emerald-600 leading-tight">
+              {new Date(myCheckin.checked_in_at).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+          </div>
+        ) : session.status === 'cancelled' ? (
+          <div className="bg-gray-100 border border-gray-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
+            <XCircle className="w-5 h-5 text-gray-500" />
+            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wide mt-0.5 leading-tight">
+              Đã huỷ
+            </span>
+          </div>
+        ) : isFull ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
+            <Users className="w-5 h-5 text-amber-600" />
+            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide mt-0.5 leading-tight">
+              Đủ chỗ
+            </span>
+          </div>
+        ) : window?.canCheckIn ? (
+          <button
+            onClick={onCheckin}
+            disabled={checking}
+            className="bg-primary hover:bg-primary/90 active:scale-[0.98] disabled:opacity-60 transition rounded-xl p-2.5 flex flex-col items-center justify-center text-center text-white shadow-sm"
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="text-[10px] font-bold uppercase tracking-wide mt-0.5 leading-tight">
+              {checking ? 'Đang...' : 'Check-in'}
+            </span>
+            {session.points_award > 0 && !checking && (
+              <span className="text-[9px] opacity-90 leading-tight">
+                +{session.points_award}đ
+              </span>
+            )}
+          </button>
+        ) : (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
+            <Clock className="w-5 h-5 text-gray-400" />
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mt-0.5 leading-tight">
+              {window?.status === 'before' ? 'Chưa mở' : 'Đã đóng'}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Check-in details below info bar (cancel link, penalty warning, hint) */}
+      {myCheckin && (
+        <div className="px-4 mt-2 flex items-center justify-between text-[11px] text-gray-600">
+          <span>
+            ✓ Đã CK lúc {new Date(myCheckin.checked_in_at).toLocaleString('vi-VN')}
+            {myCheckin.points_awarded > 0 && ` · +${myCheckin.points_awarded}đ`}
+          </span>
+          {cancelWindow?.canCancel ? (
+            <button
+              onClick={onCancelMyCheckin}
+              className={cn(
+                'underline whitespace-nowrap ml-2',
+                cancelWindow.withPenalty
+                  ? 'text-amber-700 font-semibold'
+                  : 'text-red-600'
+              )}
+            >
+              {cancelWindow.withPenalty ? '⚠️ Huỷ (-10đ)' : 'Huỷ'}
+            </button>
+          ) : (
+            <span className="text-gray-400 text-[10px] ml-2 whitespace-nowrap">
+              {cancelWindow?.reason}
+            </span>
+          )}
+        </div>
+      )}
+      {!myCheckin && !window?.canCheckIn && window?.reason && (
+        <div className="px-4 mt-2 text-[11px] text-gray-500 text-center">
+          {window.reason}
+        </div>
+      )}
+      {!myCheckin && isFull && (
+        <div className="px-4 mt-2 text-[11px] text-amber-700 text-center">
+          Buổi đã đủ {session.max_attendees} người
+        </div>
+      )}
 
       {/* Instructor + notes */}
       {(session.instructor_name || session.notes) && (
@@ -427,59 +517,6 @@ export function SessionDetailPage() {
           </div>
         </div>
       )}
-
-      {/* Check-in action */}
-      <div className="px-4 mt-4">
-        {myCheckin ? (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-            <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-600 mb-1" />
-            <p className="font-semibold text-emerald-800">Bạn đã check-in</p>
-            <p className="text-xs text-emerald-700 mt-0.5">
-              {new Date(myCheckin.checked_in_at).toLocaleString('vi-VN')}
-              {myCheckin.points_awarded > 0 && ` · +${myCheckin.points_awarded}đ`}
-            </p>
-            {cancelWindow?.canCancel && (
-              <>
-                <button
-                  onClick={onCancelMyCheckin}
-                  className={cn(
-                    'mt-2 text-xs underline',
-                    cancelWindow.withPenalty ? 'text-amber-700 font-semibold' : 'text-red-600'
-                  )}
-                >
-                  {cancelWindow.withPenalty ? '⚠️ Huỷ check-in (trừ 10đ)' : 'Huỷ check-in'}
-                </button>
-                {cancelWindow.withPenalty && (
-                  <p className="text-[10px] text-amber-600 mt-1">
-                    Sát giờ. Huỷ tự do trước 3h trước session start.
-                  </p>
-                )}
-              </>
-            )}
-            {!cancelWindow?.canCancel && (
-              <p className="text-[10px] text-gray-500 mt-2">{cancelWindow?.reason}</p>
-            )}
-          </div>
-        ) : session.status === 'cancelled' ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-gray-600">
-            Buổi này đã huỷ
-          </div>
-        ) : isFull ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center text-amber-700">
-            Buổi đã đủ người ({session.max_attendees}/{session.max_attendees})
-          </div>
-        ) : window?.canCheckIn ? (
-          <Button onClick={onCheckin} loading={checking} className="w-full">
-            <CheckCircle2 className="w-5 h-5 mr-1" />
-            Check-in
-            {session.points_award > 0 && ` (+${session.points_award}đ)`}
-          </Button>
-        ) : (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-sm text-gray-600">
-            {window?.reason}
-          </div>
-        )}
-      </div>
 
       {/* Attendees */}
       <div className="px-4 mt-5">

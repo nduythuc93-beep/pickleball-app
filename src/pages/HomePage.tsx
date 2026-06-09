@@ -20,7 +20,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SkillBadge } from '../components/members/SkillBadge'
-import { SessionCardHero, SessionCardMini } from '../components/sessions/SessionCard'
+import { SessionCardHero, SessionCardMini, type AttendeeLite } from '../components/sessions/SessionCard'
 import { AnnouncementBanner } from '../components/announcements/AnnouncementBanner'
 import { cn } from '../lib/cn'
 import type {
@@ -87,6 +87,9 @@ export function HomePage() {
   const [todaySessions, setTodaySessions] = useState<PlaySession[]>([])
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
   const [sessionCheckinCounts, setSessionCheckinCounts] = useState<Record<string, number>>({})
+  const [sessionWalkInCounts, setSessionWalkInCounts] = useState<Record<string, number>>({})
+  const [sessionAttendees, setSessionAttendees] = useState<Record<string, AttendeeLite[]>>({})
+  const [hostCoachMembers, setHostCoachMembers] = useState<AttendeeLite[]>([])
   const [mySessionCheckins, setMySessionCheckins] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -106,6 +109,8 @@ export function HomePage() {
         { data: at },
         { data: sessCi },
         { data: mySessCi },
+        { data: sessWi },
+        { data: hostsCoaches },
       ] = await Promise.all([
         supabase
           .from('tournaments')
@@ -154,8 +159,18 @@ export function HomePage() {
           .order('start_time')
           .limit(20),
         supabase.from('activity_types').select('*').order('display_order'),
-        supabase.from('session_checkins').select('session_id'),
+        supabase
+          .from('session_checkins')
+          .select(
+            'session_id, members(id, full_name, avatar_url, avatar_updated_at, is_host, is_coach)'
+          ),
         supabase.from('session_checkins').select('session_id').eq('member_id', me.id),
+        supabase.from('walk_in_checkins').select('session_id'),
+        supabase
+          .from('members')
+          .select('id, full_name, avatar_url, avatar_updated_at, is_host, is_coach')
+          .or('is_host.eq.true,is_coach.eq.true')
+          .eq('is_active', true),
       ])
       if (!mounted) return
 
@@ -164,11 +179,30 @@ export function HomePage() {
       void memberCount
       setTodaySessions((todaySess ?? []) as PlaySession[])
       setActivityTypes((at ?? []) as ActivityType[])
+      type CiRow = Pick<SessionCheckin, 'session_id'> & {
+        members: AttendeeLite | AttendeeLite[] | null
+      }
       const sessCounts: Record<string, number> = {}
-      for (const c of (sessCi ?? []) as Array<Pick<SessionCheckin, 'session_id'>>) {
+      const sessAttendees: Record<string, AttendeeLite[]> = {}
+      for (const c of (sessCi ?? []) as unknown as CiRow[]) {
         sessCounts[c.session_id] = (sessCounts[c.session_id] ?? 0) + 1
+        const m = Array.isArray(c.members) ? c.members[0] : c.members
+        if (m) {
+          ;(sessAttendees[c.session_id] ??= []).push(m)
+        }
       }
       setSessionCheckinCounts(sessCounts)
+      setSessionAttendees(sessAttendees)
+
+      // Walk-in counts per session
+      const wiCounts: Record<string, number> = {}
+      for (const w of (sessWi ?? []) as Array<{ session_id: string | null }>) {
+        if (!w.session_id) continue
+        wiCounts[w.session_id] = (wiCounts[w.session_id] ?? 0) + 1
+      }
+      setSessionWalkInCounts(wiCounts)
+
+      setHostCoachMembers((hostsCoaches ?? []) as AttendeeLite[])
       setMySessionCheckins(new Set((mySessCi ?? []).map((r) => r.session_id as string)))
       setMyResponded(new Set((myResps ?? []).map((r) => r.survey_id as string)))
       setMyRegistrations(
@@ -308,7 +342,12 @@ export function HomePage() {
                   session={nextSocial}
                   activityType={activityTypes.find((a) => a.key === nextSocial.activity_type)}
                   checkinCount={sessionCheckinCounts[nextSocial.id] ?? 0}
+                  walkInCount={sessionWalkInCounts[nextSocial.id] ?? 0}
                   hasCheckedIn={mySessionCheckins.has(nextSocial.id)}
+                  attendees={sessionAttendees[nextSocial.id] ?? []}
+                  defaultAttendees={
+                    nextSocial.activity_type === 'social' ? hostCoachMembers : []
+                  }
                 />
               )}
               {sameDayOthers.length > 0 && (
@@ -319,6 +358,7 @@ export function HomePage() {
                       session={s}
                       activityType={activityTypes.find((a) => a.key === s.activity_type)}
                       checkinCount={sessionCheckinCounts[s.id] ?? 0}
+                      walkInCount={sessionWalkInCounts[s.id] ?? 0}
                       hasCheckedIn={mySessionCheckins.has(s.id)}
                     />
                   ))}

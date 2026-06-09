@@ -28,6 +28,7 @@ export function AdminSessionsTab() {
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
   const [sessions, setSessions] = useState<PlaySession[]>([])
   const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({})
+  const [walkInCounts, setWalkInCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
@@ -36,21 +37,23 @@ export function AdminSessionsTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
-    const [{ data: sch }, { data: at }, { data: s }, { data: ci }] = await Promise.all([
-      supabase
-        .from('session_schedules')
-        .select('*')
-        .order('day_of_week')
-        .order('start_time'),
-      supabase.from('activity_types').select('*').order('display_order'),
-      supabase
-        .from('play_sessions')
-        .select('*')
-        .gte('session_date', today)
-        .order('session_date')
-        .order('start_time'),
-      supabase.from('session_checkins').select('session_id'),
-    ])
+    const [{ data: sch }, { data: at }, { data: s }, { data: ci }, { data: wi }] =
+      await Promise.all([
+        supabase
+          .from('session_schedules')
+          .select('*')
+          .order('day_of_week')
+          .order('start_time'),
+        supabase.from('activity_types').select('*').order('display_order'),
+        supabase
+          .from('play_sessions')
+          .select('*')
+          .gte('session_date', today)
+          .order('session_date')
+          .order('start_time'),
+        supabase.from('session_checkins').select('session_id'),
+        supabase.from('walk_in_checkins').select('session_id'),
+      ])
     setSchedules((sch ?? []) as SessionSchedule[])
     setActivityTypes((at ?? []) as ActivityType[])
     setSessions((s ?? []) as PlaySession[])
@@ -59,6 +62,12 @@ export function AdminSessionsTab() {
       counts[c.session_id] = (counts[c.session_id] ?? 0) + 1
     }
     setCheckinCounts(counts)
+    const wiCounts: Record<string, number> = {}
+    for (const w of (wi ?? []) as Array<{ session_id: string | null }>) {
+      if (!w.session_id) continue
+      wiCounts[w.session_id] = (wiCounts[w.session_id] ?? 0) + 1
+    }
+    setWalkInCounts(wiCounts)
     setLoading(false)
   }, [])
 
@@ -249,6 +258,7 @@ export function AdminSessionsTab() {
                 session={s}
                 activityType={atByKey.get(s.activity_type)}
                 checkinCount={checkinCounts[s.id] ?? 0}
+                walkInCount={walkInCounts[s.id] ?? 0}
               />
               <div className="flex gap-2 px-1">
                 <button

@@ -2,16 +2,31 @@ import { Link } from 'react-router-dom'
 import { Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight, Trophy } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ACTIVITY_STYLE, formatDateShort, formatTime, formatVnd } from '../../lib/sessions'
-import type { ActivityType, PlaySession } from '../../types/database'
+import { MemberAvatar } from '../members/MemberAvatar'
+import type { ActivityType, Member, PlaySession } from '../../types/database'
+
+export type AttendeeLite = Pick<
+  Member,
+  'id' | 'full_name' | 'avatar_url' | 'avatar_updated_at' | 'is_host' | 'is_coach'
+>
 
 type Props = {
   session: PlaySession
   activityType?: ActivityType
   checkinCount?: number
+  walkInCount?: number
   hasCheckedIn?: boolean
 }
 
-export function SessionCard({ session, activityType, checkinCount, hasCheckedIn }: Props) {
+export function SessionCard({
+  session,
+  activityType,
+  checkinCount,
+  walkInCount,
+  hasCheckedIn,
+}: Props) {
+  const total =
+    typeof checkinCount === 'number' ? checkinCount + (walkInCount ?? 0) : undefined
   const style = ACTIVITY_STYLE[session.activity_type]
   const isCancelled = session.status === 'cancelled'
   const isCompleted = session.status === 'completed'
@@ -66,9 +81,9 @@ export function SessionCard({ session, activityType, checkinCount, hasCheckedIn 
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" /> {session.venue}
             </span>
-            {typeof checkinCount === 'number' && (
+            {typeof total === 'number' && (
               <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" /> {checkinCount}/{session.max_attendees}
+                <Users className="w-3 h-3" /> {total}/{session.max_attendees}
               </span>
             )}
           </div>
@@ -122,16 +137,48 @@ export function SessionCardHero({
   session,
   activityType,
   checkinCount,
+  walkInCount,
   hasCheckedIn,
+  attendees = [],
+  defaultAttendees = [],
 }: {
   session: PlaySession
   activityType?: ActivityType
   checkinCount?: number
+  walkInCount?: number
   hasCheckedIn?: boolean
+  /** Members who have actually checked in (with avatars) */
+  attendees?: AttendeeLite[]
+  /** Host/Coach who haven't checked in yet but presumed to attend */
+  defaultAttendees?: AttendeeLite[]
 }) {
   const style = ACTIVITY_STYLE[session.activity_type]
   const isCancelled = session.status === 'cancelled'
   const isCompleted = session.status === 'completed'
+
+  const total =
+    typeof checkinCount === 'number' ? checkinCount + (walkInCount ?? 0) : 0
+  const fillPct = session.max_attendees > 0
+    ? Math.min(100, (total / session.max_attendees) * 100)
+    : 0
+
+  // Merge: actual attendees first, then host/coach defaults; dedupe by id
+  const seen = new Set<string>()
+  const merged: AttendeeLite[] = []
+  for (const a of attendees) {
+    if (!seen.has(a.id)) {
+      seen.add(a.id)
+      merged.push(a)
+    }
+  }
+  for (const a of defaultAttendees) {
+    if (!seen.has(a.id)) {
+      seen.add(a.id)
+      merged.push(a)
+    }
+  }
+  const visibleAvatars = merged.slice(0, 6)
+  const extraAvatarCount = Math.max(0, merged.length - visibleAvatars.length)
 
   return (
     <Link
@@ -185,10 +232,78 @@ export function SessionCardHero({
           {typeof checkinCount === 'number' && (
             <span className="flex items-center gap-1">
               <Users className="w-3.5 h-3.5" />
-              {checkinCount}/{session.max_attendees}
+              {total}/{session.max_attendees}
             </span>
           )}
         </div>
+
+        {/* Progress bar */}
+        {typeof checkinCount === 'number' && session.max_attendees > 0 && (
+          <div className="mb-3">
+            <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all duration-500',
+                  fillPct >= 100 ? 'bg-red-300' : fillPct >= 75 ? 'bg-amber-200' : 'bg-white'
+                )}
+                style={{ width: `${fillPct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-1 text-[10px] opacity-90">
+              <span>
+                {fillPct >= 100
+                  ? 'Đã đủ chỗ'
+                  : fillPct >= 75
+                  ? `Sắp đầy · còn ${session.max_attendees - total} chỗ`
+                  : `Còn ${session.max_attendees - total} chỗ trống`}
+              </span>
+              <span className="font-semibold">{Math.round(fillPct)}%</span>
+            </div>
+          </div>
+        )}
+
+        {/* Avatar stack — Host/Coach + checked-in members */}
+        {merged.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-3">
+            <div className="flex -space-x-2">
+              {visibleAvatars.map((a) => {
+                const ring = a.is_host
+                  ? 'ring-amber-300'
+                  : a.is_coach
+                  ? 'ring-blue-300'
+                  : 'ring-white/60'
+                return (
+                  <div
+                    key={a.id}
+                    className={cn(
+                      'rounded-full ring-2 bg-white/10',
+                      ring
+                    )}
+                    title={
+                      a.is_host
+                        ? `${a.full_name} · Host`
+                        : a.is_coach
+                        ? `${a.full_name} · HLV`
+                        : a.full_name
+                    }
+                  >
+                    <MemberAvatar member={a} size="sm" />
+                  </div>
+                )
+              })}
+              {extraAvatarCount > 0 && (
+                <div className="w-8 h-8 rounded-full bg-white/25 backdrop-blur ring-2 ring-white/60 flex items-center justify-center text-[10px] font-bold">
+                  +{extraAvatarCount}
+                </div>
+              )}
+            </div>
+            {defaultAttendees.length > 0 && attendees.length === 0 && (
+              <span className="text-[10px] opacity-80 ml-1">
+                Host & HLV mặc định
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           {hasCheckedIn ? (
@@ -222,15 +337,24 @@ export function SessionCardMini({
   session,
   activityType,
   checkinCount,
+  walkInCount,
   hasCheckedIn,
 }: {
   session: PlaySession
   activityType?: ActivityType
   checkinCount?: number
+  walkInCount?: number
   hasCheckedIn?: boolean
 }) {
   const style = ACTIVITY_STYLE[session.activity_type]
   const isCancelled = session.status === 'cancelled'
+  const total =
+    typeof checkinCount === 'number' ? checkinCount + (walkInCount ?? 0) : undefined
+  const fillPct =
+    typeof total === 'number' && session.max_attendees > 0
+      ? Math.min(100, (total / session.max_attendees) * 100)
+      : 0
+  const accent = session.activity_type === 'training' ? 'bg-amber-500' : 'bg-blue-500'
 
   return (
     <Link
@@ -268,11 +392,11 @@ export function SessionCardMini({
         <span>
           {formatTime(session.start_time)}-{formatTime(session.end_time)}
         </span>
-        {typeof checkinCount === 'number' && (
+        {typeof total === 'number' && (
           <>
             <span className="text-gray-400">·</span>
             <span>
-              {checkinCount}/{session.max_attendees}
+              {total}/{session.max_attendees}
             </span>
           </>
         )}
@@ -280,6 +404,16 @@ export function SessionCardMini({
           <CheckCircle2 className="w-3 h-3 text-primary ml-auto flex-shrink-0" />
         )}
       </div>
+
+      {/* Tiny progress bar */}
+      {typeof total === 'number' && session.max_attendees > 0 && (
+        <div className="mt-1.5 h-1 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className={cn('h-full rounded-full transition-all', accent)}
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+      )}
 
       {/* Row 3 (optional): HLV name nếu có */}
       {session.instructor_name && (

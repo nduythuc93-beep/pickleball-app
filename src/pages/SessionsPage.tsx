@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Calendar, History } from 'lucide-react'
-import { SessionCard, SessionCardHero, SessionCardMini } from '../components/sessions/SessionCard'
+import { SessionCard, SessionCardHero, SessionCardMini, type AttendeeLite } from '../components/sessions/SessionCard'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { cn } from '../lib/cn'
@@ -20,6 +20,9 @@ export function SessionsPage() {
   const [sessions, setSessions] = useState<PlaySession[]>([])
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
   const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({})
+  const [walkInCounts, setWalkInCounts] = useState<Record<string, number>>({})
+  const [sessionAttendees, setSessionAttendees] = useState<Record<string, AttendeeLite[]>>({})
+  const [hostCoachMembers, setHostCoachMembers] = useState<AttendeeLite[]>([])
   const [myCheckins, setMyCheckins] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
@@ -34,7 +37,14 @@ export function SessionsPage() {
       const from = new Date(now.getTime() - 14 * 86400000)
       const to = new Date(now.getTime() + 30 * 86400000)
 
-      const [{ data: s }, { data: at }, { data: ci }, { data: mc }] = await Promise.all([
+      const [
+        { data: s },
+        { data: at },
+        { data: ci },
+        { data: mc },
+        { data: wi },
+        { data: hostsCoaches },
+      ] = await Promise.all([
         supabase
           .from('play_sessions')
           .select('*')
@@ -44,19 +54,47 @@ export function SessionsPage() {
           .order('session_date', { ascending: true })
           .order('start_time', { ascending: true }),
         supabase.from('activity_types').select('*').order('display_order'),
-        supabase.from('session_checkins').select('session_id'),
+        supabase
+          .from('session_checkins')
+          .select(
+            'session_id, members(id, full_name, avatar_url, avatar_updated_at, is_host, is_coach)'
+          ),
         supabase.from('session_checkins').select('session_id').eq('member_id', me.id),
+        supabase.from('walk_in_checkins').select('session_id'),
+        supabase
+          .from('members')
+          .select('id, full_name, avatar_url, avatar_updated_at, is_host, is_coach')
+          .or('is_host.eq.true,is_coach.eq.true')
+          .eq('is_active', true),
       ])
       if (!mounted) return
 
       setSessions((s ?? []) as PlaySession[])
       setActivityTypes((at ?? []) as ActivityType[])
 
+      type CiRow = Pick<SessionCheckin, 'session_id'> & {
+        members: AttendeeLite | AttendeeLite[] | null
+      }
       const counts: Record<string, number> = {}
-      for (const c of (ci ?? []) as Array<Pick<SessionCheckin, 'session_id'>>) {
+      const attendees: Record<string, AttendeeLite[]> = {}
+      for (const c of (ci ?? []) as unknown as CiRow[]) {
         counts[c.session_id] = (counts[c.session_id] ?? 0) + 1
+        const m = Array.isArray(c.members) ? c.members[0] : c.members
+        if (m) {
+          ;(attendees[c.session_id] ??= []).push(m)
+        }
       }
       setCheckinCounts(counts)
+      setSessionAttendees(attendees)
+
+      const wiCounts: Record<string, number> = {}
+      for (const w of (wi ?? []) as Array<{ session_id: string | null }>) {
+        if (!w.session_id) continue
+        wiCounts[w.session_id] = (wiCounts[w.session_id] ?? 0) + 1
+      }
+      setWalkInCounts(wiCounts)
+
+      setHostCoachMembers((hostsCoaches ?? []) as AttendeeLite[])
       setMyCheckins(new Set((mc ?? []).map((r) => r.session_id as string)))
       setLoading(false)
     }
@@ -249,7 +287,10 @@ export function SessionsPage() {
                     session={s}
                     activityType={atByKey.get(s.activity_type)}
                     checkinCount={checkinCounts[s.id] ?? 0}
+                    walkInCount={walkInCounts[s.id] ?? 0}
                     hasCheckedIn={myCheckins.has(s.id)}
+                    attendees={sessionAttendees[s.id] ?? []}
+                    defaultAttendees={hostCoachMembers}
                   />
                 ))}
 
@@ -262,6 +303,7 @@ export function SessionsPage() {
                         session={s}
                         activityType={atByKey.get(s.activity_type)}
                         checkinCount={checkinCounts[s.id] ?? 0}
+                        walkInCount={walkInCounts[s.id] ?? 0}
                         hasCheckedIn={myCheckins.has(s.id)}
                       />
                     ))}
@@ -277,6 +319,7 @@ export function SessionsPage() {
                       session={s}
                       activityType={atByKey.get(s.activity_type)}
                       checkinCount={checkinCounts[s.id] ?? 0}
+                      walkInCount={walkInCounts[s.id] ?? 0}
                       hasCheckedIn={myCheckins.has(s.id)}
                     />
                   ))}

@@ -173,9 +173,9 @@ export function CheckinLandingPage() {
               </p>
               <h3 className="text-lg font-bold mt-1">Đăng ký thành viên (30 giây)</h3>
               <div className="flex flex-wrap gap-1.5 mt-2 text-xs opacity-95">
-                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🎁 Free chai nước</span>
-                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🎯 +20 điểm</span>
+                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🎯 +20 điểm khởi đầu</span>
                 <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🏆 Đổi quà</span>
+                <span className="bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">🎫 Đăng ký giải</span>
               </div>
               <div className="mt-3 inline-flex items-center gap-1 bg-white text-purple-700 px-4 py-1.5 rounded-full text-sm font-bold shadow">
                 Đăng ký ngay <ArrowRight className="w-3 h-3" />
@@ -492,7 +492,7 @@ export function CheckinLandingPage() {
             </p>
             <h3 className="text-base font-bold mt-0.5">Đăng ký miễn phí</h3>
             <p className="text-[11px] mt-1 opacity-90">
-              Free chai nước · +20đ · Đổi quà · Xem giải đấu
+              +20 điểm khởi đầu · Đổi quà · Xem giải đấu
             </p>
             <div className="mt-2 text-xs font-bold flex items-center gap-1">
               Đăng ký <ArrowRight className="w-3 h-3" />

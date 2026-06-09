@@ -184,6 +184,9 @@ export type WalkInCheckin = {
   notified_telegram_at: string | null
   notified_sheet_at: string | null
   notes: string | null
+  is_paid: boolean
+  paid_at: string | null
+  paid_marked_by: string | null
 }
 
 // ========================================

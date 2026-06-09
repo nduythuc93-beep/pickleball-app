@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Download, Phone, UserPlus, UserCheck, Search } from 'lucide-react'
+import { Download, Phone, UserPlus, UserCheck, Search, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
@@ -34,6 +34,17 @@ export function AdminWalkInTab() {
   useEffect(() => {
     load()
   }, [load])
+
+  async function onRemove(i: WalkInCheckin) {
+    if (!confirm(`Xoá vãng lai "${i.full_name}" (${i.phone})?`)) return
+    const { error } = await supabase.from('walk_in_checkins').delete().eq('id', i.id)
+    if (error) {
+      toast.error(friendlyError(error))
+      return
+    }
+    toast.success('Đã xoá')
+    load()
+  }
 
   const stats = useMemo(() => {
     const total = items.length
@@ -172,13 +183,24 @@ export function AdminWalkInTab() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-gray-500 mt-1.5">
-                <span>{new Date(i.checked_in_at).toLocaleString('vi-VN')}</span>
-                {i.referral_source && (
-                  <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-                    {i.referral_source}
+              <div className="flex items-center justify-between gap-2 mt-1.5">
+                <div className="flex items-center gap-2 text-[11px] text-gray-500 flex-1 min-w-0">
+                  <span className="truncate">
+                    {new Date(i.checked_in_at).toLocaleString('vi-VN')}
                   </span>
-                )}
+                  {i.referral_source && (
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 whitespace-nowrap">
+                      {i.referral_source}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => onRemove(i)}
+                  className="p-1.5 rounded text-red-500 hover:bg-red-50 flex-shrink-0"
+                  title="Xoá"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))}

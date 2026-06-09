@@ -329,7 +329,30 @@ export function HomePage() {
         )
       })()}
 
-      {/* Stats Row — TRƯỚC Tournament để giảm clash màu */}
+      {/* Đổi quà CTA — NGAY SAU sessions */}
+      <div className="px-4 mt-4">
+        <Link
+          to="/rewards"
+          className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden hover:shadow-lg transition-shadow"
+        >
+          <Gift className="absolute -right-6 -bottom-6 w-32 h-32 opacity-20" />
+          <div className="relative flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-2xl">
+              🎁
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-90">
+                Đổi điểm lấy quà
+              </p>
+              <p className="text-base font-bold">Bạn có {me.total_points ?? 0}đ</p>
+              <p className="text-[11px] opacity-90">Xem catalog quà →</p>
+            </div>
+            <ArrowRight className="w-5 h-5" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Stats Row */}
       <div className="px-4 mt-4 grid grid-cols-3 gap-2">
         <StatCard
           to="/surveys"
@@ -401,29 +424,6 @@ export function HomePage() {
           </div>
         </div>
       )}
-
-      {/* Đổi quà CTA */}
-      <div className="px-4 mt-5">
-        <Link
-          to="/rewards"
-          className="block bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 rounded-2xl p-4 text-white shadow-md relative overflow-hidden hover:shadow-lg transition-shadow"
-        >
-          <Gift className="absolute -right-6 -bottom-6 w-32 h-32 opacity-20" />
-          <div className="relative flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-2xl">
-              🎁
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-90">
-                Đổi điểm lấy quà
-              </p>
-              <p className="text-base font-bold">Bạn có {me.total_points ?? 0}đ</p>
-              <p className="text-[11px] opacity-90">Xem catalog quà →</p>
-            </div>
-            <ArrowRight className="w-5 h-5" />
-          </div>
-        </Link>
-      </div>
 
       {/* Surveys */}
       <Section title="📋 Khảo sát" href="/surveys" loading={loading}>

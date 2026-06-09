@@ -210,6 +210,37 @@ export function SessionDetailPage() {
     load()
   }
 
+  async function onToggleWalkinPaid(w: WalkInCheckin) {
+    if (!canManage) return
+    const newPaid = !w.is_paid
+    const { error } = await supabase
+      .from('walk_in_checkins')
+      .update({
+        is_paid: newPaid,
+        paid_at: newPaid ? new Date().toISOString() : null,
+        paid_marked_by: newPaid ? user?.id ?? null : null,
+      })
+      .eq('id', w.id)
+    if (error) {
+      toast.error(friendlyError(error))
+      return
+    }
+    toast.success(newPaid ? 'Đã đánh dấu trả' : 'Đã bỏ đánh dấu')
+    load()
+  }
+
+  async function onRemoveWalkin(w: WalkInCheckin) {
+    if (!canManage) return
+    if (!confirm(`Xoá vãng lai ${w.full_name}?`)) return
+    const { error } = await supabase.from('walk_in_checkins').delete().eq('id', w.id)
+    if (error) {
+      toast.error(friendlyError(error))
+      return
+    }
+    toast.success('Đã xoá')
+    load()
+  }
+
   async function onAddMember(memberId: string) {
     const { error } = await supabase.from('session_checkins').insert({
       session_id: session!.id,
@@ -457,12 +488,17 @@ export function SessionDetailPage() {
                       i !== walkIns.length - 1 && 'border-b border-amber-100'
                     )}
                   >
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-sm font-bold">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-sm font-bold flex-shrink-0">
                       {w.full_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{w.full_name}</p>
-                      <p className="text-[10px] text-gray-500">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium truncate">{w.full_name}</p>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold whitespace-nowrap">
+                          VÃNG LAI
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 truncate">
                         {canManage && `📞 ${w.phone} · `}
                         {new Date(w.checked_in_at).toLocaleTimeString('vi-VN', {
                           hour: '2-digit',
@@ -471,9 +507,36 @@ export function SessionDetailPage() {
                         {w.referral_source && ` · ${w.referral_source}`}
                       </p>
                     </div>
-                    <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold whitespace-nowrap">
-                      VÃNG LAI
-                    </span>
+                    <div className="flex items-center gap-1">
+                      {canManage && (
+                        <button
+                          onClick={() => onToggleWalkinPaid(w)}
+                          className={cn(
+                            'p-1.5 rounded-lg',
+                            w.is_paid
+                              ? 'bg-green-50 text-green-700'
+                              : 'bg-gray-100 text-gray-500'
+                          )}
+                          title={w.is_paid ? 'Đã trả' : 'Chưa trả'}
+                        >
+                          <DollarSign className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {!canManage && w.is_paid && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-bold">
+                          Đã trả
+                        </span>
+                      )}
+                      {canManage && (
+                        <button
+                          onClick={() => onRemoveWalkin(w)}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50"
+                          title="Xoá vãng lai"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

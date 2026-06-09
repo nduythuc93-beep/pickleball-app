@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS walk_in_checkins (
   notes text
 );
 
--- Chống spam: 1 SĐT/ngày 1 lần
+-- Chống spam: 1 SĐT/ngày 1 lần (timezone VN để IMMUTABLE)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_walkin_phone_date
-  ON walk_in_checkins(phone, (checked_in_at::date));
+  ON walk_in_checkins(phone, ((checked_in_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date));
 
 CREATE INDEX IF NOT EXISTS idx_walkin_phone ON walk_in_checkins(phone);
 CREATE INDEX IF NOT EXISTS idx_walkin_not_converted
@@ -61,11 +61,12 @@ BEGIN
     RAISE EXCEPTION 'SĐT không được để trống';
   END IF;
 
-  -- Check đã check-in cùng ngày
+  -- Check đã check-in cùng ngày (theo VN time)
   SELECT count(*) INTO v_existing_count
   FROM walk_in_checkins
   WHERE phone = trim(p_phone)
-    AND checked_in_at::date = current_date;
+    AND (checked_in_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
+        = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date;
   IF v_existing_count > 0 THEN
     RAISE EXCEPTION 'SĐT % đã check-in hôm nay rồi', p_phone;
   END IF;

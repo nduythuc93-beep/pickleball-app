@@ -162,23 +162,17 @@ export function SessionCardHero({
     ? Math.min(100, (total / session.max_attendees) * 100)
     : 0
 
-  // Merge: actual attendees first, then host/coach defaults; dedupe by id
-  const seen = new Set<string>()
-  const merged: AttendeeLite[] = []
-  for (const a of attendees) {
-    if (!seen.has(a.id)) {
-      seen.add(a.id)
-      merged.push(a)
-    }
-  }
-  for (const a of defaultAttendees) {
-    if (!seen.has(a.id)) {
-      seen.add(a.id)
-      merged.push(a)
-    }
-  }
-  const visibleAvatars = merged.slice(0, 6)
-  const extraAvatarCount = Math.max(0, merged.length - visibleAvatars.length)
+  // Build avatar list:
+  // - actual attendees first (full color, solid ring)
+  // - then host/coach who HAVEN'T checked in (grayscale, dashed ring, "mặc định")
+  const checkedInIds = new Set(attendees.map((a) => a.id))
+  const pendingDefaults = defaultAttendees.filter((a) => !checkedInIds.has(a.id))
+  const stack: Array<{ member: AttendeeLite; isCheckedIn: boolean }> = [
+    ...attendees.map((a) => ({ member: a, isCheckedIn: true })),
+    ...pendingDefaults.map((a) => ({ member: a, isCheckedIn: false })),
+  ]
+  const visibleAvatars = stack.slice(0, 6)
+  const extraAvatarCount = Math.max(0, stack.length - visibleAvatars.length)
 
   return (
     <Link
@@ -263,31 +257,46 @@ export function SessionCardHero({
         )}
 
         {/* Avatar stack — Host/Coach + checked-in members */}
-        {merged.length > 0 && (
-          <div className="flex items-center gap-1.5 mb-3">
+        {stack.length > 0 && (
+          <div className="flex items-center gap-2 mb-3">
             <div className="flex -space-x-2">
-              {visibleAvatars.map((a) => {
-                const ring = a.is_host
+              {visibleAvatars.map(({ member: a, isCheckedIn }) => {
+                const ring = !isCheckedIn
+                  ? 'ring-white/40 ring-dashed'
+                  : a.is_host
                   ? 'ring-amber-300'
                   : a.is_coach
                   ? 'ring-blue-300'
                   : 'ring-white/60'
+                const roleLabel = a.is_host ? 'Host' : a.is_coach ? 'HLV' : ''
+                const title = !isCheckedIn
+                  ? `${a.full_name}${roleLabel ? ` · ${roleLabel}` : ''} · chưa check-in`
+                  : `${a.full_name}${roleLabel ? ` · ${roleLabel}` : ''}`
                 return (
                   <div
                     key={a.id}
-                    className={cn(
-                      'rounded-full ring-2 bg-white/10',
-                      ring
-                    )}
-                    title={
-                      a.is_host
-                        ? `${a.full_name} · Host`
-                        : a.is_coach
-                        ? `${a.full_name} · HLV`
-                        : a.full_name
-                    }
+                    className={cn('relative rounded-full ring-2', ring)}
+                    title={title}
                   >
-                    <MemberAvatar member={a} size="sm" />
+                    <div
+                      className={cn(
+                        !isCheckedIn && 'grayscale opacity-60'
+                      )}
+                    >
+                      <MemberAvatar member={a} size="sm" />
+                    </div>
+                    {/* Crown overlay for Host */}
+                    {a.is_host && (
+                      <span className="absolute -top-1.5 -right-1 text-[10px] leading-none">
+                        👑
+                      </span>
+                    )}
+                    {/* Coach badge */}
+                    {!a.is_host && a.is_coach && (
+                      <span className="absolute -top-1.5 -right-1 text-[10px] leading-none">
+                        🎓
+                      </span>
+                    )}
                   </div>
                 )
               })}
@@ -297,11 +306,15 @@ export function SessionCardHero({
                 </div>
               )}
             </div>
-            {defaultAttendees.length > 0 && attendees.length === 0 && (
-              <span className="text-[10px] opacity-80 ml-1">
-                Host & HLV mặc định
-              </span>
-            )}
+            <span className="text-[10px] opacity-80 leading-tight">
+              {attendees.length > 0
+                ? `${attendees.length} đã check-in${
+                    pendingDefaults.length > 0
+                      ? ` · ${pendingDefaults.length} Host/HLV chưa`
+                      : ''
+                  }`
+                : `${pendingDefaults.length} Host/HLV mặc định`}
+            </span>
           </div>
         )}
 

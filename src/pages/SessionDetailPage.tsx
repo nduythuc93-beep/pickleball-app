@@ -11,6 +11,7 @@ import {
   DollarSign,
   Trash2,
   AlertTriangle,
+  Crown,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -50,6 +51,7 @@ export function SessionDetailPage() {
   const [checkins, setCheckins] = useState<CheckinRow[]>([])
   const [walkIns, setWalkIns] = useState<WalkInCheckin[]>([])
   const [allMembers, setAllMembers] = useState<Member[]>([])
+  const [hostCoachMembers, setHostCoachMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [checking, setChecking] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
@@ -78,7 +80,9 @@ export function SessionDetailPage() {
     setSession(sess)
     setCheckins((ci ?? []) as CheckinRow[])
     setWalkIns((wi ?? []) as WalkInCheckin[])
-    setAllMembers((mems ?? []) as Member[])
+    const memberList = (mems ?? []) as Member[]
+    setAllMembers(memberList)
+    setHostCoachMembers(memberList.filter((m) => m.is_host || m.is_coach))
 
     if (sess) {
       const { data: at } = await supabase
@@ -361,6 +365,57 @@ export function SessionDetailPage() {
               {session.notes}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Host & HLV của buổi — luôn hiển thị nổi bật */}
+      {hostCoachMembers.length > 0 && (
+        <div className="px-4 mt-3">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                Host & HLV của buổi
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {hostCoachMembers.map((m) => {
+                const checkedIn = checkins.some((c) => c.member_id === m.id)
+                return (
+                  <div
+                    key={m.id}
+                    className={cn(
+                      'flex items-center gap-2 bg-white rounded-full pl-1 pr-3 py-1 shadow-sm border',
+                      checkedIn ? 'border-emerald-200' : 'border-amber-200'
+                    )}
+                    title={
+                      checkedIn
+                        ? `${m.full_name} · đã check-in`
+                        : `${m.full_name} · chưa check-in`
+                    }
+                  >
+                    <div className={cn(!checkedIn && 'grayscale opacity-70')}>
+                      <MemberAvatar member={m} size="sm" />
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-xs font-semibold text-gray-900">
+                        {m.full_name}
+                      </span>
+                      <span
+                        className={cn(
+                          'text-[9px] font-bold uppercase tracking-wide',
+                          m.is_host ? 'text-amber-700' : 'text-blue-700'
+                        )}
+                      >
+                        {m.is_host ? '👑 Host' : '🎓 HLV'}
+                        {checkedIn ? ' · ✓ đã CK' : ' · chờ CK'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
 

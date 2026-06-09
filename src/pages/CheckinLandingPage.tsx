@@ -8,6 +8,7 @@ import {
   Trophy,
   Calendar,
   MapPin,
+  CheckCircle2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -46,6 +47,8 @@ export function CheckinLandingPage() {
   const [phone, setPhone] = useState('')
   const [referral, setReferral] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [checkedInSessions, setCheckedInSessions] = useState<Set<string>>(new Set())
+  const [checkingInSessionId, setCheckingInSessionId] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -114,7 +117,30 @@ export function CheckinLandingPage() {
       toast.error(friendlyError(error))
       return
     }
+    // Auto-track session đầu nếu attach được
+    if (todaySocial) setCheckedInSessions(new Set([todaySocial.id]))
     setDone(true)
+  }
+
+  async function onCheckInSession(sessionId: string) {
+    if (!fullName || !phone) {
+      toast.error('Thiếu thông tin walk-in')
+      return
+    }
+    setCheckingInSessionId(sessionId)
+    const { error } = await supabase.rpc('walk_in_checkin', {
+      p_full_name: fullName.trim(),
+      p_phone: phone.trim(),
+      p_referral_source: referral || null,
+      p_session_id: sessionId,
+    })
+    setCheckingInSessionId(null)
+    if (error) {
+      toast.error(friendlyError(error))
+      return
+    }
+    setCheckedInSessions((prev) => new Set([...prev, sessionId]))
+    toast.success('Đã check-in! 🎉')
   }
 
   // Done screen — visible content, locked actions
@@ -171,32 +197,48 @@ export function CheckinLandingPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {todaySessions.slice(0, 4).map((s) => {
+              {todaySessions.slice(0, 6).map((s) => {
                 const at = activityTypes.find((a) => a.key === s.activity_type)
                 const style = ACTIVITY_STYLE[s.activity_type]
+                const isCheckedIn = checkedInSessions.has(s.id)
+                const isLoading = checkingInSessionId === s.id
                 return (
-                  <div
-                    key={s.id}
-                    className="bg-white rounded-xl p-3 flex items-center gap-3 shadow-sm"
-                  >
-                    <div
-                      className={cn(
-                        'w-11 h-11 rounded-lg flex items-center justify-center text-xl flex-shrink-0',
-                        style.iconBg
-                      )}
-                    >
-                      {at?.icon ?? '🏓'}
+                  <div key={s.id} className="bg-white rounded-xl p-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'w-11 h-11 rounded-lg flex items-center justify-center text-xl flex-shrink-0',
+                          style.iconBg
+                        )}
+                      >
+                        {at?.icon ?? '🏓'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{at?.label}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {formatDateShort(s.session_date)} ·{' '}
+                          {formatTime(s.start_time)}-{formatTime(s.end_time)}
+                        </p>
+                        <p className="text-[10px] text-gray-400 truncate">📍 {s.venue}</p>
+                      </div>
+                      <span className="text-sm font-bold text-gray-700 flex-shrink-0">
+                        {formatVnd(s.price_vnd)}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{at?.label}</p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {formatDateShort(s.session_date)} ·{' '}
-                        {formatTime(s.start_time)}-{formatTime(s.end_time)} · {s.venue}
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold text-gray-700 flex-shrink-0">
-                      {formatVnd(s.price_vnd)}
-                    </span>
+
+                    {isCheckedIn ? (
+                      <div className="mt-2 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold text-center flex items-center justify-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã check-in
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => onCheckInSession(s.id)}
+                        disabled={isLoading}
+                        className="mt-2 w-full py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-600 disabled:opacity-50 flex items-center justify-center gap-1"
+                      >
+                        {isLoading ? 'Đang check-in...' : 'Check-in buổi này →'}
+                      </button>
+                    )}
                   </div>
                 )
               })}

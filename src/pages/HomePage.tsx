@@ -55,15 +55,17 @@ const greetingByHour = (h: number) => {
   return 'Chào buổi tối'
 }
 
+// Tournament: ALL gold/amber/orange theme (trophy concept)
+// → phân biệt rõ với Social hero (emerald/teal)
 const formatGradient: Record<string, string> = {
-  round_robin: 'bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700',
-  single_elim: 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-600',
-  double_elim: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600',
-  custom: 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900',
+  round_robin: 'bg-gradient-to-br from-amber-400 via-orange-500 to-yellow-600',
+  single_elim: 'bg-gradient-to-br from-orange-500 via-red-500 to-rose-600',
+  double_elim: 'bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600',
+  custom: 'bg-gradient-to-br from-stone-500 via-stone-600 to-stone-800',
 }
 
 const statusByStatus: Record<string, string> = {
-  ongoing: 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700',
+  ongoing: 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600',
   open: '',
   draft: '',
   completed: '',
@@ -327,40 +329,7 @@ export function HomePage() {
         )
       })()}
 
-      {/* Hero Banner: Featured tournaments */}
-      {featuredTournaments.length > 0 ? (
-        <div className="pt-4">
-          <div className="flex items-center justify-between px-4 mb-2">
-            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Nổi bật
-            </h2>
-            {featuredTournaments.length > 1 && (
-              <span className="text-[11px] text-gray-400">
-                Vuốt để xem thêm →
-              </span>
-            )}
-          </div>
-          <div
-            className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {featuredTournaments.map((t, i) => (
-              <TournamentBanner
-                key={t.id}
-                tournament={t}
-                isRegistered={myRegistrations.has(t.id)}
-                single={featuredTournaments.length === 1}
-                index={i}
-                total={featuredTournaments.length}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <NoTournamentBanner />
-      )}
-
-      {/* Stats Row */}
+      {/* Stats Row — TRƯỚC Tournament để giảm clash màu */}
       <div className="px-4 mt-4 grid grid-cols-3 gap-2">
         <StatCard
           to="/surveys"
@@ -400,6 +369,35 @@ export function HomePage() {
               <QuickAction to="/admin" label="Giải đấu" icon={Trophy} />
               <QuickAction to="/admin" label="Thành viên" icon={Users} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tournament section — đặt SAU stats, KHÔNG còn ở top */}
+      {featuredTournaments.length > 0 && (
+        <div className="pt-5">
+          <div className="flex items-center justify-between px-4 mb-2">
+            <h2 className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+              <Trophy className="w-3 h-3" /> Giải đấu
+            </h2>
+            {featuredTournaments.length > 1 && (
+              <span className="text-[11px] text-gray-400">Vuốt →</span>
+            )}
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {featuredTournaments.map((t, i) => (
+              <TournamentBanner
+                key={t.id}
+                tournament={t}
+                isRegistered={myRegistrations.has(t.id)}
+                single={featuredTournaments.length === 1}
+                index={i}
+                total={featuredTournaments.length}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -680,16 +678,6 @@ function TournamentBanner({
         )}
       </div>
     </Link>
-  )
-}
-
-function NoTournamentBanner() {
-  return (
-    <div className="mt-4 mx-4 rounded-2xl bg-gradient-to-br from-primary-50 via-white to-emerald-50 p-5 text-center border border-primary/10">
-      <Trophy className="w-10 h-10 text-primary/30 mx-auto mb-2" />
-      <p className="text-sm font-semibold text-gray-700">Chưa có giải nào sắp diễn ra</p>
-      <p className="text-xs text-gray-500 mt-1">Đợi admin tạo giải mới nhé!</p>
-    </div>
   )
 }
 

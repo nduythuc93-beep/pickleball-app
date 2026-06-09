@@ -60,6 +60,10 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       toast.error('Tên không được để trống')
       return
     }
+    if (!phone.trim() || phone.trim().length < 9) {
+      toast.error('Số điện thoại là bắt buộc (9-15 ký tự)')
+      return
+    }
     setSaving(true)
     const payload = {
       full_name: fullName.trim(),
@@ -135,11 +139,14 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
         />
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Phone"
+            label="Phone *"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="09xxxxxxxx"
+            required
+            inputMode="tel"
+            minLength={9}
           />
           <Input
             label="Zalo ID"

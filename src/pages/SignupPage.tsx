@@ -27,12 +27,12 @@ export function SignupPage() {
   // Required
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [gender, setGender] = useState<Gender | ''>('')
 
   // Optional (collapsible)
   const [showMore, setShowMore] = useState(false)
-  const [phone, setPhone] = useState('')
   const [experience, setExperience] = useState<PlayExperience>('beginner')
 
   const [submitting, setSubmitting] = useState(false)
@@ -54,6 +54,10 @@ export function SignupPage() {
       toast.error('Mật khẩu tối thiểu 6 ký tự')
       return
     }
+    if (!phone.trim() || phone.trim().length < 9) {
+      toast.error('Nhập số điện thoại hợp lệ')
+      return
+    }
     if (!gender) {
       toast.error('Chọn giới tính')
       return
@@ -64,7 +68,7 @@ export function SignupPage() {
     const { error: memErr } = await supabase.rpc('signup_member', {
       p_full_name: fullName.trim(),
       p_email: email.trim().toLowerCase(),
-      p_phone: phone.trim() || null,
+      p_phone: phone.trim(),
       p_experience: experience,
       p_gender: gender,
     })
@@ -160,6 +164,17 @@ export function SignupPage() {
               autoComplete="email"
             />
             <Input
+              type="tel"
+              label="Số điện thoại *"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="09xxxxxxxx"
+              required
+              inputMode="tel"
+              autoComplete="tel"
+              minLength={9}
+            />
+            <Input
               type="password"
               label="Mật khẩu *"
               value={password}
@@ -221,14 +236,6 @@ export function SignupPage() {
 
             {showMore && (
               <div className="space-y-3 pt-1 border-t border-gray-100">
-                <Input
-                  type="tel"
-                  label="Số điện thoại"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="09xxxxxxxx"
-                  autoComplete="tel"
-                />
                 <div className="space-y-1">
                   <label className="block text-xs font-medium text-gray-600">
                     Bạn đã chơi Pickleball bao lâu?

@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
+import { isValidVnPhone, normalizePhone, PHONE_INVALID_MSG } from '../lib/phone'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { useAuth } from '../hooks/useAuth'
@@ -102,8 +103,8 @@ export function CheckinLandingPage() {
       toast.error('Nhập họ tên')
       return
     }
-    if (!phone.trim() || phone.trim().length < 9) {
-      toast.error('Nhập SĐT hợp lệ')
+    if (!isValidVnPhone(phone)) {
+      toast.error(PHONE_INVALID_MSG)
       return
     }
     setSubmitting(true)
@@ -122,7 +123,7 @@ export function CheckinLandingPage() {
     if (todaySocial) {
       const { error } = await supabase.rpc('walk_in_checkin', {
         p_full_name: fullName.trim(),
-        p_phone: phone.trim(),
+        p_phone: normalizePhone(phone),
         p_referral_source: referral || null,
         p_session_id: todaySocial.id,
       })
@@ -146,7 +147,7 @@ export function CheckinLandingPage() {
     setCheckingInSessionId(sessionId)
     const { error } = await supabase.rpc('walk_in_checkin', {
       p_full_name: fullName.trim(),
-      p_phone: phone.trim(),
+      p_phone: normalizePhone(phone),
       p_referral_source: referral || null,
       p_session_id: sessionId,
     })
@@ -436,9 +437,12 @@ export function CheckinLandingPage() {
                 label="SĐT *"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="09xxxxxxxx"
+                placeholder="0901234567 (10 số)"
                 required
                 inputMode="tel"
+                maxLength={13}
+                pattern="0\d{9}"
+                title="10 số bắt đầu bằng 0"
               />
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">

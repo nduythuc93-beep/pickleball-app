@@ -8,6 +8,7 @@ import { friendlyError } from '../../lib/errors'
 import { useAuth } from '../../hooks/useAuth'
 import type { Gender, Member, PlayExperience, SkillLevel } from '../../types/database'
 import { PLAY_EXPERIENCE_LABEL, SKILL_PRESETS } from '../../types/database'
+import { isValidVnPhone, normalizePhone, PHONE_INVALID_MSG } from '../../lib/phone'
 
 type Props = {
   open: boolean
@@ -62,10 +63,11 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
       toast.error('Tên không được để trống')
       return
     }
-    if (!phone.trim() || phone.trim().length < 9) {
-      toast.error('Số điện thoại là bắt buộc (9-15 ký tự)')
+    if (!isValidVnPhone(phone)) {
+      toast.error(PHONE_INVALID_MSG)
       return
     }
+    const cleanPhone = normalizePhone(phone)
     const finalSkill = (customSkill.trim() || skillLevel).trim()
     if (!finalSkill || finalSkill.length > 10) {
       toast.error('Trình độ không hợp lệ (1-10 ký tự)')
@@ -75,7 +77,7 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
     const payload = {
       full_name: fullName.trim(),
       email: email.trim() || null,
-      phone: phone.trim() || null,
+      phone: cleanPhone,
       zalo_id: zaloId.trim() || null,
       bio: bio.trim() || null,
       play_experience: experience || null,
@@ -150,10 +152,12 @@ export function MemberForm({ open, onClose, member, onSaved }: Props) {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="09xxxxxxxx"
+            placeholder="0901234567"
             required
             inputMode="tel"
-            minLength={9}
+            maxLength={13}
+            pattern="0\d{9}"
+            title="10 số bắt đầu bằng 0"
           />
           <Input
             label="Zalo ID"

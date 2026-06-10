@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import { isValidVnPhone, normalizePhone, PHONE_INVALID_MSG } from '../lib/phone'
 import { friendlyError } from '../lib/errors'
 import { cn } from '../lib/cn'
 import type { Gender, PlayExperience } from '../types/database'
@@ -54,8 +55,8 @@ export function SignupPage() {
       toast.error('Mật khẩu tối thiểu 6 ký tự')
       return
     }
-    if (!phone.trim() || phone.trim().length < 9) {
-      toast.error('Nhập số điện thoại hợp lệ')
+    if (!isValidVnPhone(phone)) {
+      toast.error(PHONE_INVALID_MSG)
       return
     }
     if (!gender) {
@@ -68,7 +69,7 @@ export function SignupPage() {
     const { error: memErr } = await supabase.rpc('signup_member', {
       p_full_name: fullName.trim(),
       p_email: email.trim().toLowerCase(),
-      p_phone: phone.trim(),
+      p_phone: normalizePhone(phone),
       p_experience: experience,
       p_gender: gender,
     })
@@ -168,11 +169,13 @@ export function SignupPage() {
               label="Số điện thoại *"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="09xxxxxxxx"
+              placeholder="0901234567 (10 số)"
               required
               inputMode="tel"
               autoComplete="tel"
-              minLength={9}
+              maxLength={13}
+              pattern="0\d{9}"
+              title="10 số bắt đầu bằng 0"
             />
             <Input
               type="password"

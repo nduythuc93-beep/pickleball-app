@@ -48,10 +48,17 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
+        // Drop precache entries from previous SW versions so a user's
+        // device doesn't accumulate stale chunks across deploys
+        cleanupOutdatedCaches: true,
+        // Allow bigger chunks (AdminPage ~64 KB)
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
           {
-            // Cache Supabase REST queries lightly
+            // Cache Supabase GETs (selects). POSTs (RPCs / mutations)
+            // intentionally NOT cached — always hit network
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+            method: 'GET',
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-api',
@@ -62,6 +69,7 @@ export default defineConfig({
           {
             // Cache images from Supabase Storage
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            method: 'GET',
             handler: 'CacheFirst',
             options: {
               cacheName: 'supabase-storage',

@@ -93,6 +93,7 @@ export function HomePage() {
   const [sessionAttendees, setSessionAttendees] = useState<Record<string, AttendeeLite[]>>({})
   const [hostCoachMembers, setHostCoachMembers] = useState<AttendeeLite[]>([])
   const [mySessionCheckins, setMySessionCheckins] = useState<Set<string>>(new Set())
+  const [myOptOuts, setMyOptOuts] = useState<Set<string>>(new Set())
   const [quickCheckinId, setQuickCheckinId] = useState<string | null>(null)
   const [reloadTick, setReloadTick] = useState(0)
 
@@ -115,6 +116,7 @@ export function HomePage() {
         { data: mySessCi },
         { data: sessWi },
         { data: hostsCoaches },
+        { data: optOuts },
       ] = await Promise.all([
         supabase
           .from('tournaments')
@@ -175,6 +177,10 @@ export function HomePage() {
           .select('id, full_name, avatar_url, avatar_updated_at, is_host, is_coach')
           .or('is_host.eq.true,is_coach.eq.true')
           .eq('is_active', true),
+        supabase
+          .from('session_host_opt_outs')
+          .select('session_id')
+          .eq('member_id', me.id),
       ])
       if (!mounted) return
 
@@ -208,6 +214,7 @@ export function HomePage() {
 
       setHostCoachMembers((hostsCoaches ?? []) as AttendeeLite[])
       setMySessionCheckins(new Set((mySessCi ?? []).map((r) => r.session_id as string)))
+      setMyOptOuts(new Set((optOuts ?? []).map((r) => r.session_id as string)))
       setMyResponded(new Set((myResps ?? []).map((r) => r.survey_id as string)))
       setMyRegistrations(
         new Set((myRegs ?? []).map((r) => r.tournament_id as string))
@@ -272,6 +279,7 @@ export function HomePage() {
 
   // Auto-check-in cho Host vào tất cả Social sessions trong tương lai
   // (Host mặc định luôn có mặt — không cần thao tác)
+  // EXCEPTION: Host đã chủ động huỷ check-in → tôn trọng opt-out
   useEffect(() => {
     if (!me || !me.is_host) return
     if (todaySessions.length === 0) return
@@ -282,7 +290,8 @@ export function HomePage() {
         s.activity_type === 'social' &&
         s.status !== 'cancelled' &&
         new Date(`${s.session_date}T${s.end_time}`).getTime() > nowMs &&
-        !mySessionCheckins.has(s.id)
+        !mySessionCheckins.has(s.id) &&
+        !myOptOuts.has(s.id) // ❗ skip nếu host đã opt-out
     )
     if (candidates.length === 0) return
 
@@ -307,7 +316,7 @@ export function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [me, todaySessions, mySessionCheckins, user])
+  }, [me, todaySessions, mySessionCheckins, myOptOuts, user])
 
   const handleQuickCheckin = useCallback(
     async (session: PlaySession) => {

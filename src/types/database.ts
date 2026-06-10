@@ -163,6 +163,13 @@ export type PlaySession = {
   created_at: string
 }
 
+/** Host's explicit opt-out for a Social session, blocks auto-checkin re-creation. */
+export type SessionHostOptOut = {
+  session_id: string
+  member_id: string
+  opted_out_at: string
+}
+
 export type SessionCheckin = {
   id: string
   session_id: string

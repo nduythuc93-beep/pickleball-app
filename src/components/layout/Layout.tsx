@@ -1,15 +1,20 @@
 import { Suspense } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
+import { RouteErrorBoundary } from './RouteErrorBoundary'
 
 export function Layout() {
+  const location = useLocation()
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 max-w-md mx-auto">
       {/* Content area with extra bottom padding để buổi cuối không bị bottom nav che */}
       <main className="flex-1 overflow-y-auto pb-24">
-        <Suspense fallback={<RouteFallback />}>
-          <Outlet />
-        </Suspense>
+        {/* Keyed by path so the boundary resets when user navigates after an error */}
+        <RouteErrorBoundary key={location.pathname}>
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
+        </RouteErrorBoundary>
       </main>
       <BottomNav />
     </div>

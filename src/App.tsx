@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './hooks/useAuth'
 import { Layout } from './components/layout/Layout'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
+import { RouteErrorBoundary } from './components/layout/RouteErrorBoundary'
 
 // Eager — entry points and primary destination
 import { LoginPage } from './pages/LoginPage'
@@ -70,17 +71,21 @@ function App() {
           <Route
             path="/signup"
             element={
-              <Suspense fallback={<PublicFallback />}>
-                <SignupPage />
-              </Suspense>
+              <RouteErrorBoundary>
+                <Suspense fallback={<PublicFallback />}>
+                  <SignupPage />
+                </Suspense>
+              </RouteErrorBoundary>
             }
           />
           <Route
             path="/checkin"
             element={
-              <Suspense fallback={<PublicFallback />}>
-                <CheckinLandingPage />
-              </Suspense>
+              <RouteErrorBoundary>
+                <Suspense fallback={<PublicFallback />}>
+                  <CheckinLandingPage />
+                </Suspense>
+              </RouteErrorBoundary>
             }
           />
 

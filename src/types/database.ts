@@ -180,6 +180,18 @@ export type AttendeeLiteRow = {
   is_coach: boolean
 }
 
+/** Result of get_sessions_data(from, to) RPC — single round-trip for SessionsPage. */
+export type SessionsData = {
+  sessions: PlaySession[]
+  activity_types: ActivityType[]
+  session_checkin_counts: Record<string, number>
+  session_attendees: Record<string, AttendeeLiteRow[]>
+  session_walk_in_counts: Record<string, number>
+  my_session_checkin_ids: string[]
+  host_coach_members: AttendeeLiteRow[]
+  my_opt_out_session_ids: string[]
+}
+
 /** Result of get_home_data() RPC — single round-trip for HomePage. */
 export type HomeData = {
   tournaments: Tournament[]

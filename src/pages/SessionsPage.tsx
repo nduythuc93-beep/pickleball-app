@@ -11,7 +11,7 @@ import type {
   ActivityType,
   ActivityTypeKey,
   PlaySession,
-  SessionCheckin,
+  SessionsData,
 } from '../types/database'
 
 type Filter = 'all' | ActivityTypeKey
@@ -42,71 +42,25 @@ export function SessionsPage() {
       const from = new Date(now.getTime() - 14 * 86400000)
       const to = new Date(now.getTime() + 30 * 86400000)
 
-      const [
-        { data: s },
-        { data: at },
-        { data: ci },
-        { data: mc },
-        { data: wi },
-        { data: hostsCoaches },
-        { data: optOuts },
-      ] = await Promise.all([
-        supabase
-          .from('play_sessions')
-          .select('*')
-          .gte('session_date', from.toISOString().slice(0, 10))
-          .lte('session_date', to.toISOString().slice(0, 10))
-          .neq('status', 'cancelled')
-          .order('session_date', { ascending: true })
-          .order('start_time', { ascending: true }),
-        supabase.from('activity_types').select('*').order('display_order'),
-        supabase
-          .from('session_checkins')
-          .select(
-            'session_id, members(id, full_name, avatar_url, avatar_updated_at, is_host, is_coach)'
-          ),
-        supabase.from('session_checkins').select('session_id').eq('member_id', me.id),
-        supabase.from('walk_in_checkins').select('session_id'),
-        supabase
-          .from('members')
-          .select('id, full_name, avatar_url, avatar_updated_at, is_host, is_coach')
-          .or('is_host.eq.true,is_coach.eq.true')
-          .eq('is_active', true),
-        supabase
-          .from('session_host_opt_outs')
-          .select('session_id')
-          .eq('member_id', me.id),
-      ])
+      const { data, error } = await supabase.rpc('get_sessions_data', {
+        p_date_from: from.toISOString().slice(0, 10),
+        p_date_to: to.toISOString().slice(0, 10),
+      })
       if (!mounted) return
-
-      setSessions((s ?? []) as PlaySession[])
-      setActivityTypes((at ?? []) as ActivityType[])
-
-      type CiRow = Pick<SessionCheckin, 'session_id'> & {
-        members: AttendeeLite | AttendeeLite[] | null
+      if (error || !data) {
+        console.error('[sessions] get_sessions_data error:', error)
+        setLoading(false)
+        return
       }
-      const counts: Record<string, number> = {}
-      const attendees: Record<string, AttendeeLite[]> = {}
-      for (const c of (ci ?? []) as unknown as CiRow[]) {
-        counts[c.session_id] = (counts[c.session_id] ?? 0) + 1
-        const m = Array.isArray(c.members) ? c.members[0] : c.members
-        if (m) {
-          ;(attendees[c.session_id] ??= []).push(m)
-        }
-      }
-      setCheckinCounts(counts)
-      setSessionAttendees(attendees)
-
-      const wiCounts: Record<string, number> = {}
-      for (const w of (wi ?? []) as Array<{ session_id: string | null }>) {
-        if (!w.session_id) continue
-        wiCounts[w.session_id] = (wiCounts[w.session_id] ?? 0) + 1
-      }
-      setWalkInCounts(wiCounts)
-
-      setHostCoachMembers((hostsCoaches ?? []) as AttendeeLite[])
-      setMyCheckins(new Set((mc ?? []).map((r) => r.session_id as string)))
-      setMyOptOuts(new Set((optOuts ?? []).map((r) => r.session_id as string)))
+      const d = data as SessionsData
+      setSessions(d.sessions ?? [])
+      setActivityTypes(d.activity_types ?? [])
+      setCheckinCounts(d.session_checkin_counts ?? {})
+      setSessionAttendees((d.session_attendees ?? {}) as Record<string, AttendeeLite[]>)
+      setWalkInCounts(d.session_walk_in_counts ?? {})
+      setHostCoachMembers((d.host_coach_members ?? []) as AttendeeLite[])
+      setMyCheckins(new Set(d.my_session_checkin_ids ?? []))
+      setMyOptOuts(new Set(d.my_opt_out_session_ids ?? []))
       setLoading(false)
     }
     load()

@@ -392,7 +392,7 @@ function RegisterTab({
                 </span>
               )}
               {r.status === 'confirmed' && (
-                <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 rounded font-bold">
+                <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded font-bold">
                   ✓ CONFIRMED
                 </span>
               )}
@@ -402,7 +402,7 @@ function RegisterTab({
                 {isPending && (
                   <button
                     onClick={() => onConfirm(r)}
-                    className="flex-1 py-1.5 text-xs font-medium bg-green-50 text-green-700 rounded-lg flex items-center justify-center gap-1"
+                    className="flex-1 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center gap-1"
                   >
                     <Check className="w-3 h-3" /> Confirm
                   </button>

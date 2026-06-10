@@ -586,7 +586,7 @@ export function SessionDetailPage() {
                           className={cn(
                             'p-1.5 rounded-lg text-xs',
                             c.is_paid
-                              ? 'bg-green-50 text-green-700'
+                              ? 'bg-emerald-50 text-emerald-700'
                               : 'bg-gray-100 text-gray-500'
                           )}
                           title={c.is_paid ? 'Đã trả' : 'Chưa trả'}
@@ -595,7 +595,7 @@ export function SessionDetailPage() {
                         </button>
                       )}
                       {!canManage && c.is_paid && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-bold">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-bold">
                           Đã trả
                         </span>
                       )}
@@ -672,7 +672,7 @@ export function SessionDetailPage() {
                           className={cn(
                             'p-1.5 rounded-lg',
                             w.is_paid
-                              ? 'bg-green-50 text-green-700'
+                              ? 'bg-emerald-50 text-emerald-700'
                               : 'bg-gray-100 text-gray-500'
                           )}
                           title={w.is_paid ? 'Đã trả' : 'Chưa trả'}
@@ -681,7 +681,7 @@ export function SessionDetailPage() {
                         </button>
                       )}
                       {!canManage && w.is_paid && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-bold">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-bold">
                           Đã trả
                         </span>
                       )}

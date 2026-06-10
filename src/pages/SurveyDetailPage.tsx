@@ -140,7 +140,7 @@ export function SurveyDetailPage() {
       </div>
 
       {hasSubmitted && (
-        <div className="mx-4 mt-4 bg-green-50 border border-green-200 text-green-700 rounded-xl p-3 text-sm flex items-start gap-2">
+        <div className="mx-4 mt-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl p-3 text-sm flex items-start gap-2">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium">Đã gửi câu trả lời</p>

@@ -304,7 +304,7 @@ function SurveysAdminTab() {
                       'py-2 px-3 text-xs font-medium rounded-lg',
                       s.is_open
                         ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                     )}
                     aria-label={s.is_open ? 'Đóng' : 'Mở'}
                   >
@@ -497,7 +497,7 @@ function MembersAdminTab() {
                     'p-2 rounded-lg',
                     m.is_active
                       ? 'text-red-600 hover:bg-red-50'
-                      : 'text-green-600 hover:bg-green-50'
+                      : 'text-emerald-600 hover:bg-emerald-50'
                   )}
                   aria-label={m.is_active ? 'Tắt' : 'Bật'}
                 >

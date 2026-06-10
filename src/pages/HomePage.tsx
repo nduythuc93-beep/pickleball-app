@@ -3,12 +3,10 @@ import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import {
   LogOut,
-  ChevronRight,
   ClipboardList,
   Trophy,
   Users,
   Award,
-  Activity as ActivityIcon,
   Calendar,
   MapPin,
   ArrowRight,
@@ -21,34 +19,16 @@ import { supabase } from '../lib/supabase'
 import { friendlyError } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
-import { SkillBadge } from '../components/members/SkillBadge'
 import { SessionCardHero, SessionCardMini, type AttendeeLite } from '../components/sessions/SessionCard'
 import { AnnouncementBanner } from '../components/announcements/AnnouncementBanner'
 import { cn } from '../lib/cn'
 import type {
   ActivityType,
-  Member,
   PlaySession,
   SessionCheckin,
   Survey,
   Tournament,
-  TournamentMatch,
-  TournamentRegistration,
 } from '../types/database'
-
-type ActivityItem = {
-  id: string
-  type: 'match' | 'registration'
-  timestamp: string
-  title: string
-  subtitle?: string
-  href: string
-}
-
-type Scorer = {
-  member: Member
-  wins: number
-}
 
 const greetingByHour = (h: number) => {
   if (h < 11) return 'Chào buổi sáng'
@@ -79,13 +59,10 @@ function getTournamentGradient(t: Tournament) {
 
 export function HomePage() {
   const { member: me, user, isAdmin, signOut } = useAuth()
-  const [loading, setLoading] = useState(true)
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [myResponded, setMyResponded] = useState<Set<string>>(new Set())
   const [myRegistrations, setMyRegistrations] = useState<Set<string>>(new Set())
-  const [topScorers, setTopScorers] = useState<Scorer[]>([])
-  const [activity, setActivity] = useState<ActivityItem[]>([])
   const [todaySessions, setTodaySessions] = useState<PlaySession[]>([])
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
   const [sessionCheckinCounts, setSessionCheckinCounts] = useState<Record<string, number>>({})
@@ -105,9 +82,6 @@ export function HomePage() {
       const [
         { data: t },
         { data: s },
-        { data: members, count: memberCount },
-        { data: matches },
-        { data: regs },
         { data: myResps },
         { data: myRegs },
         { data: todaySess },
@@ -126,29 +100,9 @@ export function HomePage() {
           .limit(5),
         supabase
           .from('surveys')
-          .select('*')
+          .select('id, is_open, closes_at')
           .eq('is_open', true)
-          .order('created_at', { ascending: false })
-          .limit(5),
-        supabase
-          .from('members')
-          .select('*', { count: 'exact' })
-          .eq('is_active', true),
-        supabase
-          .from('tournament_matches')
-          .select('*')
-          .not('winner_ids', 'is', null)
-          .order('played_at', { ascending: false })
-          .limit(50),
-        supabase
-          .from('tournament_registrations')
-          .select(
-            '*, tournaments!inner(id, name), members!tournament_registrations_member_id_fkey(full_name)'
-          )
-          .eq('status', 'confirmed')
-          .eq('is_mirror', false)
-          .order('registered_at', { ascending: false })
-          .limit(5),
+          .limit(20),
         supabase.from('survey_responses').select('survey_id').eq('member_id', me.id),
         supabase
           .from('tournament_registrations')
@@ -186,7 +140,6 @@ export function HomePage() {
 
       setTournaments((t ?? []) as Tournament[])
       setSurveys((s ?? []) as Survey[])
-      void memberCount
       setTodaySessions((todaySess ?? []) as PlaySession[])
       setActivityTypes((at ?? []) as ActivityType[])
       type CiRow = Pick<SessionCheckin, 'session_id'> & {
@@ -220,56 +173,6 @@ export function HomePage() {
         new Set((myRegs ?? []).map((r) => r.tournament_id as string))
       )
 
-      // Top scorers
-      const memberMap = new Map<string, Member>()
-      for (const m of (members ?? []) as Member[]) memberMap.set(m.id, m)
-      const winCounts = new Map<string, number>()
-      for (const m of (matches ?? []) as TournamentMatch[]) {
-        for (const id of m.winner_ids ?? []) {
-          winCounts.set(id, (winCounts.get(id) ?? 0) + 1)
-        }
-      }
-      const scorers: Scorer[] = Array.from(winCounts.entries())
-        .map(([memberId, wins]) => ({ member: memberMap.get(memberId)!, wins }))
-        .filter((s) => s.member)
-        .sort((a, b) => b.wins - a.wins)
-        .slice(0, 5)
-      setTopScorers(scorers)
-
-      // Activity
-      const acts: ActivityItem[] = []
-      for (const m of (matches ?? []) as TournamentMatch[]) {
-        if (!m.played_at || !m.winner_ids) continue
-        const winnerNames = m.winner_ids
-          .map((id) => memberMap.get(id)?.full_name ?? '?')
-          .join(' & ')
-        acts.push({
-          id: `match-${m.id}`,
-          type: 'match',
-          timestamp: m.played_at,
-          title: `🏆 ${winnerNames} thắng`,
-          subtitle: `${m.score_a}-${m.score_b} · ${m.round}`,
-          href: `/tournaments/${m.tournament_id}`,
-        })
-      }
-      type RegRow = TournamentRegistration & {
-        tournaments: { id: string; name: string } | null
-        members: { full_name: string } | null
-      }
-      for (const r of (regs ?? []) as RegRow[]) {
-        acts.push({
-          id: `reg-${r.id}`,
-          type: 'registration',
-          timestamp: r.registered_at,
-          title: `📝 ${r.members?.full_name ?? '?'} đăng ký giải`,
-          subtitle: r.tournaments?.name,
-          href: `/tournaments/${r.tournament_id}`,
-        })
-      }
-      acts.sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-      setActivity(acts.slice(0, 8))
-
-      setLoading(false)
     }
     load()
     return () => {
@@ -544,126 +447,6 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Surveys */}
-      <Section title="📋 Khảo sát" href="/surveys" loading={loading}>
-        {surveys.length === 0 ? (
-          <Empty text="Chưa có khảo sát nào" />
-        ) : (
-          surveys.slice(0, 3).map((s) => {
-            const done = myResponded.has(s.id)
-            return (
-              <Link
-                key={s.id}
-                to={`/surveys/${s.id}`}
-                className="bg-white rounded-2xl p-3.5 flex items-center gap-3 hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                <div
-                  className={cn(
-                    'w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0',
-                    done
-                      ? 'bg-emerald-50 text-emerald-600'
-                      : 'bg-rose-50 text-rose-600'
-                  )}
-                >
-                  <ClipboardList className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-gray-900 truncate">{s.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {done
-                      ? '✓ Đã điền'
-                      : s.closes_at
-                      ? `Hạn ${new Date(s.closes_at).toLocaleDateString('vi-VN')}`
-                      : 'Đang mở'}
-                  </p>
-                </div>
-                {!done && (
-                  <ArrowRight className="w-4 h-4 text-primary flex-shrink-0" />
-                )}
-              </Link>
-            )
-          })
-        )}
-      </Section>
-
-      {/* Top scorers — podium style */}
-      <Section title="🥇 Top scorer" loading={loading}>
-        {topScorers.length === 0 ? (
-          <Empty text="Chưa có kết quả trận nào" />
-        ) : (
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            {topScorers.map((s, i) => (
-              <Link
-                key={s.member.id}
-                to={`/members/${s.member.id}`}
-                className={cn(
-                  'flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors',
-                  i !== topScorers.length - 1 && 'border-b border-gray-100'
-                )}
-              >
-                <span className="w-7 text-center text-base">
-                  {i === 0 && '🥇'}
-                  {i === 1 && '🥈'}
-                  {i === 2 && '🥉'}
-                  {i > 2 && <span className="text-xs font-bold text-gray-400">#{i + 1}</span>}
-                </span>
-                <MemberAvatar member={s.member} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{s.member.full_name}</p>
-                  <p className="text-[11px] text-gray-500">
-                    {s.wins} trận thắng
-                  </p>
-                </div>
-                <SkillBadge level={s.member.skill_level} size="sm" />
-                <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg">
-                  <Award className="w-3 h-3" />
-                  <span className="text-xs font-bold">{s.wins}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      {/* Activity feed */}
-      <Section title="📰 Hoạt động gần đây" loading={loading}>
-        {activity.length === 0 ? (
-          <Empty text="Chưa có hoạt động nào" />
-        ) : (
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            {activity.map((a, i) => (
-              <Link
-                key={a.id}
-                to={a.href}
-                className={cn(
-                  'flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors',
-                  i !== activity.length - 1 && 'border-b border-gray-100'
-                )}
-              >
-                <div
-                  className={cn(
-                    'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-                    a.type === 'match'
-                      ? 'bg-amber-50 text-amber-600'
-                      : 'bg-blue-50 text-blue-600'
-                  )}
-                >
-                  <ActivityIcon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 leading-tight truncate">{a.title}</p>
-                  {a.subtitle && (
-                    <p className="text-xs text-gray-500 truncate mt-0.5">{a.subtitle}</p>
-                  )}
-                </div>
-                <span className="text-[10px] text-gray-400 whitespace-nowrap mt-1">
-                  {timeAgo(a.timestamp)}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </Section>
     </div>
   )
 }
@@ -859,57 +642,3 @@ function QuickAction({
   )
 }
 
-function Section({
-  title,
-  href,
-  children,
-  loading,
-}: {
-  title: string
-  href?: string
-  children: React.ReactNode
-  loading?: boolean
-}) {
-  return (
-    <div className="mt-6 px-4">
-      <div className="flex items-center justify-between mb-2.5">
-        <h2 className="text-sm font-bold text-gray-800">{title}</h2>
-        {href && (
-          <Link
-            to={href}
-            className="text-xs text-primary font-semibold flex items-center gap-0.5"
-          >
-            Xem tất cả <ChevronRight className="w-3 h-3" />
-          </Link>
-        )}
-      </div>
-      <div className="space-y-2">
-        {loading ? (
-          <div className="bg-white rounded-2xl p-4 animate-pulse shadow-sm">
-            <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
-            <div className="h-2 bg-gray-100 rounded w-1/2" />
-          </div>
-        ) : (
-          children
-        )}
-      </div>
-    </div>
-  )
-}
-
-function Empty({ text }: { text: string }) {
-  return (
-    <div className="bg-white rounded-2xl p-5 text-center text-xs text-gray-400 shadow-sm">
-      {text}
-    </div>
-  )
-}
-
-function timeAgo(iso: string) {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000
-  if (diff < 60) return 'vừa xong'
-  if (diff < 3600) return `${Math.floor(diff / 60)} phút`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ`
-  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} ngày`
-  return new Date(iso).toLocaleDateString('vi-VN')
-}

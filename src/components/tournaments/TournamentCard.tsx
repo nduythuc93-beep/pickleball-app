@@ -5,7 +5,7 @@ import type { Tournament } from '../../types/database'
 
 const STATUS_STYLE: Record<Tournament['status'], { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'bg-gray-100 text-gray-600' },
-  open: { label: 'Đang mở đăng ký', cls: 'bg-green-50 text-green-700' },
+  open: { label: 'Đang mở đăng ký', cls: 'bg-emerald-50 text-emerald-700' },
   ongoing: { label: 'Đang diễn ra', cls: 'bg-blue-50 text-blue-700' },
   completed: { label: 'Đã kết thúc', cls: 'bg-amber-50 text-amber-700' },
 }

@@ -37,7 +37,11 @@ export function SignupPage() {
   const [experience, setExperience] = useState<PlayExperience>('beginner')
 
   const [submitting, setSubmitting] = useState(false)
-  const [done, setDone] = useState<null | { needsConfirm: boolean }>(null)
+  const [done, setDone] = useState<null | {
+    needsConfirm: boolean
+    signupBonus: number
+    linkedWalkinCount: number
+  }>(null)
 
   if (!loading && session) return <Navigate to="/home" replace />
 
@@ -47,8 +51,14 @@ export function SignupPage() {
       toast.error('Nhập họ tên')
       return
     }
-    if (!email.trim()) {
+    const emailClean = email.trim().toLowerCase()
+    if (!emailClean) {
       toast.error('Nhập email')
+      return
+    }
+    // Client-side email format check (HTML5 fallback)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailClean)) {
+      toast.error('Email không hợp lệ')
       return
     }
     if (password.length < 6) {
@@ -65,10 +75,10 @@ export function SignupPage() {
     }
     setSubmitting(true)
 
-    // 1. Tạo member record
-    const { error: memErr } = await supabase.rpc('signup_member', {
+    // 1. Tạo member record (catch business validation errors first — phone uniqueness, etc.)
+    const { data: memData, error: memErr } = await supabase.rpc('signup_member', {
       p_full_name: fullName.trim(),
-      p_email: email.trim().toLowerCase(),
+      p_email: emailClean,
       p_phone: normalizePhone(phone),
       p_experience: experience,
       p_gender: gender,
@@ -79,48 +89,124 @@ export function SignupPage() {
       return
     }
 
+    const memResult = memData as {
+      signup_bonus?: number
+      linked_walkin_count?: number
+    } | null
+
     // 2. Tạo auth user
-    const { error, needsConfirm } = await signUpWithPassword(email.trim(), password)
+    const { error, needsConfirm } = await signUpWithPassword(emailClean, password)
     setSubmitting(false)
     if (error) {
       toast.error(error)
       return
     }
-    setDone({ needsConfirm })
+
+    setDone({
+      needsConfirm,
+      signupBonus: memResult?.signup_bonus ?? 0,
+      linkedWalkinCount: memResult?.linked_walkin_count ?? 0,
+    })
+
     if (!needsConfirm) {
-      toast.success('Chào mừng đến với CLB! 🎉')
-      setTimeout(() => navigate('/home'), 600)
+      const linkedNote =
+        memResult?.linked_walkin_count && memResult.linked_walkin_count > 0
+          ? ` · Đã link ${memResult.linked_walkin_count} check-in trước`
+          : ''
+      toast.success(`Chào mừng! +${memResult?.signup_bonus ?? 20}đ khởi đầu${linkedNote} 🎉`, {
+        duration: 4000,
+      })
+      setTimeout(() => navigate('/home'), 800)
     }
   }
 
   if (done) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center p-6">
-        <div className="max-w-sm w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle2 className="w-9 h-9 text-emerald-600" />
+        <div className="max-w-sm w-full bg-white rounded-2xl shadow-lg p-7 text-center">
+          <div
+            className={cn(
+              'w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center',
+              done.needsConfirm ? 'bg-amber-100' : 'bg-emerald-100'
+            )}
+          >
+            <CheckCircle2
+              className={cn(
+                'w-9 h-9',
+                done.needsConfirm ? 'text-amber-600' : 'text-emerald-600'
+              )}
+            />
           </div>
           <h2 className="text-xl font-bold mb-2">
-            {done.needsConfirm ? 'Cần xác nhận email' : 'Chào mừng! 🎉'}
+            {done.needsConfirm ? '📧 Kiểm tra email' : 'Chào mừng! 🎉'}
           </h2>
+
           {done.needsConfirm ? (
             <>
-              <p className="text-sm text-gray-600">
-                Em đã gửi link xác nhận đến <strong>{email}</strong>.
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Em đã gửi link xác nhận đến{' '}
+                <strong className="text-gray-900">{email}</strong>
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Mở email và click link để hoàn tất.
-              </p>
+              <ol className="text-xs text-gray-700 mt-4 space-y-2 text-left bg-amber-50 rounded-xl p-3">
+                <li className="flex gap-2">
+                  <span className="font-bold text-amber-700">1.</span>
+                  <span>Mở email (cả thư mục Spam nếu cần)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-amber-700">2.</span>
+                  <span>Click link xác nhận trong email</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-amber-700">3.</span>
+                  <span>Quay lại đây và đăng nhập</span>
+                </li>
+              </ol>
+              <Link
+                to="/login"
+                className="mt-4 inline-block w-full py-2.5 bg-primary text-white font-semibold text-sm rounded-lg hover:bg-primary-600"
+              >
+                Về trang đăng nhập
+              </Link>
             </>
           ) : (
-            <p className="text-sm text-gray-600">Đang chuyển vào app...</p>
+            <>
+              <p className="text-sm text-gray-600 mb-3">Tài khoản của anh/chị đã sẵn sàng</p>
+
+              {/* Bonus card */}
+              {(done.signupBonus > 0 || done.linkedWalkinCount > 0) && (
+                <div className="space-y-2 mb-4">
+                  {done.signupBonus > 0 && (
+                    <div className="bg-gradient-to-r from-primary-50 to-emerald-50 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
+                      <div className="text-2xl">🎁</div>
+                      <div className="text-left flex-1">
+                        <p className="text-xs font-bold text-primary">
+                          +{done.signupBonus} điểm khởi đầu
+                        </p>
+                        <p className="text-[10px] text-gray-500">
+                          Dùng đổi quà tại CLB
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {done.linkedWalkinCount > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3">
+                      <div className="text-2xl">👋</div>
+                      <div className="text-left flex-1">
+                        <p className="text-xs font-bold text-amber-700">
+                          Đã link {done.linkedWalkinCount} check-in vãng lai
+                        </p>
+                        <p className="text-[10px] text-gray-500">
+                          Lịch sử của anh/chị được giữ
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500">Đang chuyển vào app...</p>
+            </>
           )}
-          <Link
-            to="/login"
-            className="mt-6 inline-block text-xs text-primary font-semibold"
-          >
-            Về đăng nhập
-          </Link>
         </div>
       </div>
     )

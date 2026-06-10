@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { Search, Pencil, ChevronRight, Award } from 'lucide-react'
 import { TopBar } from '../components/layout/TopBar'
 import { MemberAvatar } from '../components/members/MemberAvatar'
-import { MemberCard } from '../components/members/MemberCard'
 import { SkillBadge } from '../components/members/SkillBadge'
 import { RoleBadges } from '../components/members/RoleBadges'
 import { supabase } from '../lib/supabase'
@@ -224,14 +223,6 @@ export function MembersPage() {
         )}
       </div>
 
-      {/* Fallback: nếu không có me, vẫn render đầy đủ list cũ */}
-      {!me && !loading && members.length > 0 && (
-        <div className="p-4 space-y-2">
-          {members.map((m) => (
-            <MemberCard key={m.id} member={m} />
-          ))}
-        </div>
-      )}
     </div>
   )
 }

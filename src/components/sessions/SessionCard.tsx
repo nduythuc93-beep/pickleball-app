@@ -310,7 +310,7 @@ export function SessionCardHero({
             </div>
             <span className="text-[10px] opacity-80 leading-tight">
               {attendees.length > 0
-                ? `${attendees.length}/${total} đã CK`
+                ? `${attendees.length}/${total} đã check-in`
                 : `${pendingDefaults.length} Host/HLV mặc định`}
             </span>
           </div>

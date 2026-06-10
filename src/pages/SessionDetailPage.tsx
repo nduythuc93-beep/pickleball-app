@@ -355,7 +355,7 @@ export function SessionDetailPage() {
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide mt-0.5 leading-tight">
-              Đã CK
+              Đã check-in
             </span>
             <span className="text-[9px] text-emerald-600 leading-tight">
               {new Date(myCheckin.checked_in_at).toLocaleTimeString('vi-VN', {
@@ -408,7 +408,7 @@ export function SessionDetailPage() {
       {myCheckin && (
         <div className="px-4 mt-2 flex items-center justify-between text-[11px] text-gray-600">
           <span>
-            ✓ Đã CK lúc {new Date(myCheckin.checked_in_at).toLocaleString('vi-VN')}
+            ✓ Đã check-in lúc {new Date(myCheckin.checked_in_at).toLocaleString('vi-VN')}
             {myCheckin.points_awarded > 0 && ` · +${myCheckin.points_awarded}đ`}
           </span>
           {cancelWindow?.canCancel ? (
@@ -498,7 +498,7 @@ export function SessionDetailPage() {
                         )}
                       >
                         {m.is_host ? '👑 Host' : '🎓 HLV'}
-                        {checkedIn ? ' · ✓ đã CK' : ' · chờ CK'}
+                        {checkedIn ? ' · ✓ đã check-in' : ' · chưa check-in'}
                       </span>
                     </div>
                   </div>

@@ -355,6 +355,17 @@ export function SignupPage() {
               Tham gia CLB
             </Button>
 
+            <p className="text-[10px] text-center text-gray-500 leading-relaxed">
+              Bằng việc đăng ký, anh/chị đồng ý với{' '}
+              <Link to="/terms" className="text-primary underline">
+                Điều khoản
+              </Link>{' '}
+              và{' '}
+              <Link to="/privacy" className="text-primary underline">
+                Chính sách Bảo mật
+              </Link>
+              .
+            </p>
             <p className="text-[10px] text-center text-gray-400 leading-relaxed">
               Sau khi đăng ký, Host/Coach/Admin sẽ đánh giá trình độ của
               anh/chị sau buổi đầu tiên.

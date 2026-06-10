@@ -128,6 +128,17 @@ export function LoginPage() {
             Tham gia CLB ngay →
           </Link>
         </div>
+
+        {/* Legal footer */}
+        <div className="text-center mt-8 text-[11px] text-gray-400 space-x-3">
+          <Link to="/terms" className="hover:text-primary hover:underline">
+            Điều khoản
+          </Link>
+          <span>·</span>
+          <Link to="/privacy" className="hover:text-primary hover:underline">
+            Chính sách Bảo mật
+          </Link>
+        </div>
       </div>
     </div>
   )

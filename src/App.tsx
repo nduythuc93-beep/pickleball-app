@@ -50,6 +50,12 @@ const RedemptionsPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('./pages/AdminPage').then((m) => ({ default: m.AdminPage }))
 )
+const PrivacyPage = lazy(() =>
+  import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage }))
+)
+const TermsPage = lazy(() =>
+  import('./pages/TermsPage').then((m) => ({ default: m.TermsPage }))
+)
 
 /** Fallback shown for non-Layout public routes (login/signup/checkin) */
 function PublicFallback() {
@@ -84,6 +90,26 @@ function App() {
               <RouteErrorBoundary>
                 <Suspense fallback={<PublicFallback />}>
                   <CheckinLandingPage />
+                </Suspense>
+              </RouteErrorBoundary>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <RouteErrorBoundary>
+                <Suspense fallback={<PublicFallback />}>
+                  <PrivacyPage />
+                </Suspense>
+              </RouteErrorBoundary>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <RouteErrorBoundary>
+                <Suspense fallback={<PublicFallback />}>
+                  <TermsPage />
                 </Suspense>
               </RouteErrorBoundary>
             }

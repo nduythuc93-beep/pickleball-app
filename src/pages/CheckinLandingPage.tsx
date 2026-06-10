@@ -469,6 +469,16 @@ export function CheckinLandingPage() {
               <Button type="submit" loading={submitting} className="w-full !mt-4">
                 Xác nhận tham gia
               </Button>
+              <p className="text-[10px] text-center text-gray-500 leading-relaxed mt-2">
+                Bằng việc xác nhận, anh/chị đồng ý với{' '}
+                <Link to="/terms" className="text-primary underline">
+                  Điều khoản
+                </Link>{' '}
+                và{' '}
+                <Link to="/privacy" className="text-primary underline">
+                  Chính sách Bảo mật
+                </Link>
+              </p>
             </form>
           </div>
         </div>

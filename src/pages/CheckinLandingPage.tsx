@@ -52,8 +52,14 @@ export function CheckinLandingPage() {
 
   useEffect(() => {
     async function loadData() {
-      const todayIso = new Date().toISOString().slice(0, 10)
-      const in7DaysIso = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+      // Format date in VN timezone — avoids off-by-one at midnight UTC
+      const todayIso = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+      })
+      const in7DaysIso = new Date(Date.now() + 7 * 86400000).toLocaleDateString(
+        'en-CA',
+        { timeZone: 'Asia/Ho_Chi_Minh' }
+      )
       const [{ data: sess }, { data: tour }, { data: at }, { data: rew }] = await Promise.all([
         supabase
           .from('play_sessions')
@@ -101,24 +107,34 @@ export function CheckinLandingPage() {
       return
     }
     setSubmitting(true)
-    // Lấy social session hôm nay (nếu có)
-    const todayIso = new Date().toISOString().slice(0, 10)
+
+    // Find today's social — VN timezone safe
+    const todayIso = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+    })
     const todaySocial = todaySessions.find(
       (s) => s.session_date === todayIso && s.activity_type === 'social'
     )
-    const { error } = await supabase.rpc('walk_in_checkin', {
-      p_full_name: fullName.trim(),
-      p_phone: phone.trim(),
-      p_referral_source: referral || null,
-      p_session_id: todaySocial?.id ?? null,
-    })
-    setSubmitting(false)
-    if (error) {
-      toast.error(friendlyError(error))
-      return
+
+    // Only auto-create walk_in if there's a session to attach to.
+    // Otherwise show done screen and let user pick a specific session
+    // (avoids orphan walk_in rows with NULL session_id).
+    if (todaySocial) {
+      const { error } = await supabase.rpc('walk_in_checkin', {
+        p_full_name: fullName.trim(),
+        p_phone: phone.trim(),
+        p_referral_source: referral || null,
+        p_session_id: todaySocial.id,
+      })
+      setSubmitting(false)
+      if (error) {
+        toast.error(friendlyError(error))
+        return
+      }
+      setCheckedInSessions(new Set([todaySocial.id]))
+    } else {
+      setSubmitting(false)
     }
-    // Auto-track session đầu nếu attach được
-    if (todaySocial) setCheckedInSessions(new Set([todaySocial.id]))
     setDone(true)
   }
 
@@ -152,10 +168,16 @@ export function CheckinLandingPage() {
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full" />
           <div className="absolute -left-12 -bottom-12 w-40 h-40 bg-white/5 rounded-full" />
           <div className="relative text-center">
-            <div className="text-5xl mb-2">🎉</div>
-            <h1 className="text-2xl font-bold">Đã ghi nhận tham gia!</h1>
+            <div className="text-5xl mb-2">{checkedInSessions.size > 0 ? '🎉' : '👋'}</div>
+            <h1 className="text-2xl font-bold">
+              {checkedInSessions.size > 0
+                ? 'Đã ghi nhận tham gia!'
+                : `Chào ${fullName}!`}
+            </h1>
             <p className="text-sm opacity-95 mt-1">
-              Chào <strong>{fullName}</strong>, chúc đánh vui vẻ
+              {checkedInSessions.size > 0
+                ? 'Chúc anh/chị đánh vui vẻ'
+                : 'Chọn buổi muốn tham gia bên dưới ↓'}
             </p>
           </div>
         </div>

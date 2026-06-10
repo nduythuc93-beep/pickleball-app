@@ -13,6 +13,25 @@ type SubTab = 'catalog' | 'redemptions'
 
 export function RewardsAdminTab() {
   const [subTab, setSubTab] = useState<SubTab>('catalog')
+  const [pendingCount, setPendingCount] = useState(0)
+
+  // Pull pending count to badge the "Đổi quà" tab — host/admin see at a glance
+  // how many redemptions are waiting for them
+  useEffect(() => {
+    let mounted = true
+    async function loadPendingCount() {
+      const { count } = await supabase
+        .from('reward_redemptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+      if (!mounted) return
+      setPendingCount(count ?? 0)
+    }
+    loadPendingCount()
+    return () => {
+      mounted = false
+    }
+  }, [subTab])
 
   return (
     <div>
@@ -31,12 +50,22 @@ export function RewardsAdminTab() {
           <button
             onClick={() => setSubTab('redemptions')}
             className={cn(
-              'py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1',
+              'py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1 relative',
               subTab === 'redemptions' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
             )}
           >
             <CheckCircle2 className="w-3 h-3" />
             Đổi quà
+            {pendingCount > 0 && (
+              <span
+                className={cn(
+                  'min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center ml-0.5',
+                  'bg-amber-500 text-white animate-pulse'
+                )}
+              >
+                {pendingCount}
+              </span>
+            )}
           </button>
         </div>
       </div>

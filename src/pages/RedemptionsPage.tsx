@@ -91,9 +91,14 @@ export function RedemptionsPage() {
                     <span>-{r.cost_points}đ</span>
                     <span>{new Date(r.redeemed_at).toLocaleString('vi-VN')}</span>
                   </div>
+                  {r.status === 'pending' && (
+                    <p className="text-[11px] text-amber-700 mt-1 bg-amber-50 rounded-md px-2 py-1 inline-flex items-center gap-1">
+                      ⏳ Liên hệ Admin / Host tại sân để nhận
+                    </p>
+                  )}
                   {r.status === 'delivered' && r.delivered_at && (
                     <p className="text-[10px] text-emerald-600 mt-0.5">
-                      Đã nhận lúc {new Date(r.delivered_at).toLocaleString('vi-VN')}
+                      ✓ Đã nhận lúc {new Date(r.delivered_at).toLocaleString('vi-VN')}
                     </p>
                   )}
                   {r.status === 'cancelled' && (

@@ -279,9 +279,11 @@ BEGIN
   ) RETURNING id INTO v_redemption_id;
 
   RETURN json_build_object(
-    'redemption_id', v_redemption_id,
-    'cost_points',   v_reward.cost_points,
-    'reward_name',   v_reward.name
+    'redemption_id',    v_redemption_id,
+    'cost_points',      v_reward.cost_points,
+    'reward_name',      v_reward.name,
+    -- Trả về số điểm còn lại sau khi đổi để UI hiển thị chính xác trong toast
+    'remaining_points', (SELECT total_points FROM members WHERE id = v_member_id)
   );
 END;
 $$;

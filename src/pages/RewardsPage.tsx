@@ -45,13 +45,16 @@ export function RewardsPage() {
       return
     }
     const remaining = (data as { remaining_points?: number } | null)?.remaining_points ?? 0
+    const rewardName = confirmReward.name
     toast.success(
-      `🎉 Đổi thành công! Còn ${remaining}đ. Liên hệ admin để nhận quà.`,
-      { duration: 4500 }
+      `🎉 Đã đặt "${rewardName}" · còn ${remaining}đ\nAdmin/Host sẽ xác nhận giao quà tại sân`,
+      { duration: 5000 }
     )
     setConfirmReward(null)
     await refreshMember()
     load()
+    // Redirect to history so user sees pending status
+    navigate('/redemptions')
   }
 
   if (!me) return null

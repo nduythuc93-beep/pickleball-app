@@ -332,25 +332,19 @@ export function SessionDetailPage() {
         </div>
       </div>
 
-      {/* Info bar — 3 col: Học phí | Điểm | Action (check-in/status) */}
+      {/* Info bar — 3 col: Phí Social | Check-in | Điểm thưởng */}
       <div className="px-4 -mt-3 grid grid-cols-3 gap-2 relative z-10">
+        {/* 1. Phí Social */}
         <div className="bg-white rounded-xl p-3 shadow-sm">
           <div className="text-[10px] text-gray-500 uppercase font-semibold tracking-wide">
-            Học phí
+            Phí Social
           </div>
           <div className="text-base font-bold leading-tight mt-0.5">
             {formatVnd(session.price_vnd)}
           </div>
         </div>
-        <div className="bg-white rounded-xl p-3 shadow-sm">
-          <div className="text-[10px] text-gray-500 uppercase font-semibold tracking-wide">
-            Điểm thưởng
-          </div>
-          <div className="text-base font-bold text-primary leading-tight mt-0.5">
-            {session.points_award > 0 ? `+${session.points_award} đ` : '—'}
-          </div>
-        </div>
-        {/* Action cell */}
+
+        {/* 2. Check-in (giữa) */}
         {myCheckin ? (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -402,6 +396,16 @@ export function SessionDetailPage() {
             </span>
           </div>
         )}
+
+        {/* 3. Điểm thưởng */}
+        <div className="bg-white rounded-xl p-3 shadow-sm">
+          <div className="text-[10px] text-gray-500 uppercase font-semibold tracking-wide">
+            Điểm thưởng
+          </div>
+          <div className="text-base font-bold text-primary leading-tight mt-0.5">
+            {session.points_award > 0 ? `+${session.points_award} đ` : '—'}
+          </div>
+        </div>
       </div>
 
       {/* Check-in details below info bar (cancel link, penalty warning, hint) */}

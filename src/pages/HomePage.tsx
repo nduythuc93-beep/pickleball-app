@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import {
   LogOut,
@@ -17,6 +18,7 @@ import {
   Gift,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { friendlyError } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SkillBadge } from '../components/members/SkillBadge'
@@ -76,7 +78,7 @@ function getTournamentGradient(t: Tournament) {
 }
 
 export function HomePage() {
-  const { member: me, isAdmin, signOut } = useAuth()
+  const { member: me, user, isAdmin, signOut } = useAuth()
   const [loading, setLoading] = useState(true)
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [surveys, setSurveys] = useState<Survey[]>([])
@@ -91,6 +93,8 @@ export function HomePage() {
   const [sessionAttendees, setSessionAttendees] = useState<Record<string, AttendeeLite[]>>({})
   const [hostCoachMembers, setHostCoachMembers] = useState<AttendeeLite[]>([])
   const [mySessionCheckins, setMySessionCheckins] = useState<Set<string>>(new Set())
+  const [quickCheckinId, setQuickCheckinId] = useState<string | null>(null)
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -264,7 +268,71 @@ export function HomePage() {
     return () => {
       mounted = false
     }
-  }, [me])
+  }, [me, reloadTick])
+
+  // Auto-check-in cho Host vào tất cả Social sessions trong tương lai
+  // (Host mặc định luôn có mặt — không cần thao tác)
+  useEffect(() => {
+    if (!me || !me.is_host) return
+    if (todaySessions.length === 0) return
+
+    const nowMs = Date.now()
+    const candidates = todaySessions.filter(
+      (s) =>
+        s.activity_type === 'social' &&
+        s.status !== 'cancelled' &&
+        new Date(`${s.session_date}T${s.end_time}`).getTime() > nowMs &&
+        !mySessionCheckins.has(s.id)
+    )
+    if (candidates.length === 0) return
+
+    let cancelled = false
+    async function autoCheckin() {
+      if (!me) return
+      const rows = candidates.map((s) => ({
+        session_id: s.id,
+        member_id: me.id,
+        points_awarded: s.points_award,
+        checked_in_by: user?.id ?? null,
+      }))
+      const { error } = await supabase
+        .from('session_checkins')
+        .upsert(rows, { onConflict: 'session_id,member_id', ignoreDuplicates: true })
+      if (cancelled) return
+      if (!error) {
+        setReloadTick((t) => t + 1)
+      }
+    }
+    autoCheckin()
+    return () => {
+      cancelled = true
+    }
+  }, [me, todaySessions, mySessionCheckins, user])
+
+  const handleQuickCheckin = useCallback(
+    async (session: PlaySession) => {
+      if (!me) return
+      setQuickCheckinId(session.id)
+      const { error } = await supabase.from('session_checkins').insert({
+        session_id: session.id,
+        member_id: me.id,
+        points_awarded: session.points_award,
+        checked_in_by: user?.id ?? null,
+      })
+      setQuickCheckinId(null)
+      if (error) {
+        toast.error(friendlyError(error))
+        return
+      }
+      toast.success(
+        session.points_award > 0
+          ? `Check-in thành công! +${session.points_award} điểm 🎉`
+          : 'Check-in thành công!'
+      )
+      setReloadTick((t) => t + 1)
+    },
+    [me, user]
+  )
 
   const pendingSurveys = useMemo(
     () => surveys.filter((s) => !myResponded.has(s.id)).length,
@@ -348,6 +416,8 @@ export function HomePage() {
                   defaultAttendees={
                     nextSocial.activity_type === 'social' ? hostCoachMembers : []
                   }
+                  onQuickCheckin={() => handleQuickCheckin(nextSocial)}
+                  quickCheckinLoading={quickCheckinId === nextSocial.id}
                 />
               )}
               {sameDayOthers.length > 0 && (

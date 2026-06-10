@@ -141,6 +141,8 @@ export function SessionCardHero({
   hasCheckedIn,
   attendees = [],
   defaultAttendees = [],
+  onQuickCheckin,
+  quickCheckinLoading,
 }: {
   session: PlaySession
   activityType?: ActivityType
@@ -151,6 +153,10 @@ export function SessionCardHero({
   attendees?: AttendeeLite[]
   /** Host/Coach who haven't checked in yet but presumed to attend */
   defaultAttendees?: AttendeeLite[]
+  /** One-click check-in handler — if provided, the "Check-in" pill becomes a button that
+   *  performs check-in inline without navigating to detail page. */
+  onQuickCheckin?: () => void | Promise<void>
+  quickCheckinLoading?: boolean
 }) {
   const style = ACTIVITY_STYLE[session.activity_type]
   const isCancelled = session.status === 'cancelled'
@@ -330,6 +336,29 @@ export function SessionCardHero({
             <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
               ĐÃ XONG
             </span>
+          ) : onQuickCheckin ? (
+            <button
+              type="button"
+              disabled={quickCheckinLoading}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                void onQuickCheckin()
+              }}
+              className="bg-white text-gray-900 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-md whitespace-nowrap active:scale-95 transition-transform disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {quickCheckinLoading ? (
+                <>
+                  <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  Đang check-in...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Check-in
+                </>
+              )}
+            </button>
           ) : (
             <span className="bg-white text-gray-900 px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 shadow-md whitespace-nowrap">
               Check-in

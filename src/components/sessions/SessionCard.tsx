@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight, Trophy, Sparkles } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, CheckCircle2, ArrowRight, Trophy } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { ACTIVITY_STYLE, formatDateShort, formatTime, formatVnd } from '../../lib/sessions'
 import { MemberAvatar } from '../members/MemberAvatar'
@@ -188,52 +188,48 @@ export function SessionCardHero({
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
       <div className="relative p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-              <span className="text-3xl">{activityType?.icon ?? '🏓'}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
-                ★ Hoạt động chính
-              </span>
-              {hasCheckedIn && (
-                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-white text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm ring-1 ring-emerald-300">
-                  <CheckCircle2 className="w-2.5 h-2.5" />
-                  Đã CK
-                </span>
-              )}
-            </div>
-            <h3 className="text-xl font-bold leading-tight drop-shadow">
+        {/* Header — title + price stacked compactly */}
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="min-w-0">
+            <span className="inline-block text-[9px] font-bold uppercase tracking-widest bg-white/20 backdrop-blur px-2 py-0.5 rounded-full mb-1.5">
+              ★ Hoạt động chính
+            </span>
+            <h3 className="text-2xl font-bold leading-tight drop-shadow">
               {activityType?.label ?? session.activity_type}
             </h3>
           </div>
-          <div className="text-right">
-            <div className="text-lg font-bold drop-shadow">{formatVnd(session.price_vnd)}</div>
+          <div className="text-right flex-shrink-0">
+            <div className="text-base font-bold drop-shadow leading-none">
+              {formatVnd(session.price_vnd)}
+            </div>
             {session.points_award > 0 && (
-              <div className="text-xs font-semibold opacity-95">+{session.points_award} điểm</div>
+              <div className="text-[11px] font-semibold opacity-90 mt-0.5">
+                +{session.points_award}đ
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs mb-1 opacity-95">
-          <span className="flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-0.5 rounded-full font-semibold">
-            <Calendar className="w-3 h-3" />
-            {formatDateShort(session.session_date)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
+        {/* Single-line meta: date · time · venue · count */}
+        <div className="flex items-center gap-x-2 gap-y-0.5 text-xs opacity-95 mb-2.5 flex-wrap">
+          <span className="font-semibold">{formatDateShort(session.session_date)}</span>
+          <span className="opacity-60">·</span>
+          <span>
             {formatTime(session.start_time)}-{formatTime(session.end_time)}
           </span>
-        </div>
-        <div className="flex items-center gap-3 text-xs mb-3 opacity-90">
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5" />
+          <span className="opacity-60">·</span>
+          <span className="flex items-center gap-0.5">
+            <MapPin className="w-3 h-3" />
             {session.venue}
           </span>
           {typeof checkinCount === 'number' && (
-            <span className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" />
-              {total}/{session.max_attendees}
-            </span>
+            <>
+              <span className="opacity-60">·</span>
+              <span className="flex items-center gap-0.5 font-semibold">
+                <Users className="w-3 h-3" />
+                {total}/{session.max_attendees}
+              </span>
+            </>
           )}
         </div>
 
@@ -264,7 +260,7 @@ export function SessionCardHero({
 
         {/* Avatar stack — Host/Coach + checked-in members */}
         {stack.length > 0 && (
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2.5">
             <div className="flex -space-x-2">
               {visibleAvatars.map(({ member: a, isCheckedIn }) => {
                 const ring = !isCheckedIn
@@ -314,34 +310,16 @@ export function SessionCardHero({
             </div>
             <span className="text-[10px] opacity-80 leading-tight">
               {attendees.length > 0
-                ? `${attendees.length} đã check-in${
-                    pendingDefaults.length > 0
-                      ? ` · ${pendingDefaults.length} Host/HLV chưa`
-                      : ''
-                  }`
+                ? `${attendees.length}/${total} đã CK`
                 : `${pendingDefaults.length} Host/HLV mặc định`}
             </span>
           </div>
         )}
 
-        {/* Bottom action row — mirror tournament style: meta left, action pill right */}
-        <div className="flex items-end justify-between gap-2 mt-1">
-          <div className="text-[11px] opacity-90 leading-tight flex items-center gap-1">
-            {hasCheckedIn ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Bạn đã có chỗ — xem chi tiết</span>
-              </>
-            ) : isCancelled || isCompleted ? null : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Tap để check-in & lấy điểm</span>
-              </>
-            )}
-          </div>
-
+        {/* Bottom action — single pill, right-aligned */}
+        <div className="flex justify-end mt-1">
           {hasCheckedIn ? (
-            <span className="bg-white/25 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-white/40 shadow-sm whitespace-nowrap">
+            <span className="bg-white/25 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-white/40 shadow-sm whitespace-nowrap">
               <CheckCircle2 className="w-3.5 h-3.5" /> Đã check-in
             </span>
           ) : isCancelled ? (

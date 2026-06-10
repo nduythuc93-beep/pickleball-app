@@ -223,6 +223,7 @@ export type SessionCheckin = {
   is_warned: boolean
   warned_at: string | null
   warned_by: string | null
+  warned_penalty: number
 }
 
 // ========================================

@@ -24,8 +24,8 @@ import { AnnouncementBanner } from '../components/announcements/AnnouncementBann
 import { cn } from '../lib/cn'
 import type {
   ActivityType,
+  HomeData,
   PlaySession,
-  SessionCheckin,
   Survey,
   Tournament,
 } from '../types/database'
@@ -78,101 +78,26 @@ export function HomePage() {
     let mounted = true
     async function load() {
       if (!me) return
-      const today = new Date().toISOString().slice(0, 10)
-      const [
-        { data: t },
-        { data: s },
-        { data: myResps },
-        { data: myRegs },
-        { data: todaySess },
-        { data: at },
-        { data: sessCi },
-        { data: mySessCi },
-        { data: sessWi },
-        { data: hostsCoaches },
-        { data: optOuts },
-      ] = await Promise.all([
-        supabase
-          .from('tournaments')
-          .select('*')
-          .neq('status', 'completed')
-          .order('event_date', { ascending: true, nullsFirst: false })
-          .limit(5),
-        supabase
-          .from('surveys')
-          .select('id, is_open, closes_at')
-          .eq('is_open', true)
-          .limit(20),
-        supabase.from('survey_responses').select('survey_id').eq('member_id', me.id),
-        supabase
-          .from('tournament_registrations')
-          .select('tournament_id')
-          .eq('member_id', me.id)
-          .neq('status', 'withdrawn'),
-        supabase
-          .from('play_sessions')
-          .select('*')
-          .gte('session_date', today)
-          .lte('session_date', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10))
-          .neq('status', 'cancelled')
-          .order('session_date')
-          .order('start_time')
-          .limit(20),
-        supabase.from('activity_types').select('*').order('display_order'),
-        supabase
-          .from('session_checkins')
-          .select(
-            'session_id, members(id, full_name, avatar_url, avatar_updated_at, is_host, is_coach)'
-          ),
-        supabase.from('session_checkins').select('session_id').eq('member_id', me.id),
-        supabase.from('walk_in_checkins').select('session_id'),
-        supabase
-          .from('members')
-          .select('id, full_name, avatar_url, avatar_updated_at, is_host, is_coach')
-          .or('is_host.eq.true,is_coach.eq.true')
-          .eq('is_active', true),
-        supabase
-          .from('session_host_opt_outs')
-          .select('session_id')
-          .eq('member_id', me.id),
-      ])
+      const { data, error } = await supabase.rpc('get_home_data')
       if (!mounted) return
-
-      setTournaments((t ?? []) as Tournament[])
-      setSurveys((s ?? []) as Survey[])
-      setTodaySessions((todaySess ?? []) as PlaySession[])
-      setActivityTypes((at ?? []) as ActivityType[])
-      type CiRow = Pick<SessionCheckin, 'session_id'> & {
-        members: AttendeeLite | AttendeeLite[] | null
+      if (error || !data) {
+        console.error('[home] get_home_data error:', error)
+        return
       }
-      const sessCounts: Record<string, number> = {}
-      const sessAttendees: Record<string, AttendeeLite[]> = {}
-      for (const c of (sessCi ?? []) as unknown as CiRow[]) {
-        sessCounts[c.session_id] = (sessCounts[c.session_id] ?? 0) + 1
-        const m = Array.isArray(c.members) ? c.members[0] : c.members
-        if (m) {
-          ;(sessAttendees[c.session_id] ??= []).push(m)
-        }
-      }
-      setSessionCheckinCounts(sessCounts)
-      setSessionAttendees(sessAttendees)
+      const d = data as HomeData
 
-      // Walk-in counts per session
-      const wiCounts: Record<string, number> = {}
-      for (const w of (sessWi ?? []) as Array<{ session_id: string | null }>) {
-        if (!w.session_id) continue
-        wiCounts[w.session_id] = (wiCounts[w.session_id] ?? 0) + 1
-      }
-      setSessionWalkInCounts(wiCounts)
-
-      setHostCoachMembers((hostsCoaches ?? []) as AttendeeLite[])
-      setMySessionCheckins(new Set((mySessCi ?? []).map((r) => r.session_id as string)))
-      setMyOptOuts(new Set((optOuts ?? []).map((r) => r.session_id as string)))
-      setMyResponded(new Set((myResps ?? []).map((r) => r.survey_id as string)))
-      setMyRegistrations(
-        new Set((myRegs ?? []).map((r) => r.tournament_id as string))
-      )
-
+      setTournaments(d.tournaments ?? [])
+      setSurveys(d.surveys ?? [])
+      setTodaySessions(d.sessions ?? [])
+      setActivityTypes(d.activity_types ?? [])
+      setSessionCheckinCounts(d.session_checkin_counts ?? {})
+      setSessionAttendees((d.session_attendees ?? {}) as Record<string, AttendeeLite[]>)
+      setSessionWalkInCounts(d.session_walk_in_counts ?? {})
+      setHostCoachMembers((d.host_coach_members ?? []) as AttendeeLite[])
+      setMySessionCheckins(new Set(d.my_session_checkin_ids ?? []))
+      setMyOptOuts(new Set(d.my_opt_out_session_ids ?? []))
+      setMyResponded(new Set(d.my_responded_survey_ids ?? []))
+      setMyRegistrations(new Set(d.my_registered_tournament_ids ?? []))
     }
     load()
     return () => {

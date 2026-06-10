@@ -170,6 +170,34 @@ export type SessionHostOptOut = {
   opted_out_at: string
 }
 
+/** Lite member shape returned in attendee lists / host-coach roster. */
+export type AttendeeLiteRow = {
+  id: string
+  full_name: string
+  avatar_url: string | null
+  avatar_updated_at: string | null
+  is_host: boolean
+  is_coach: boolean
+}
+
+/** Result of get_home_data() RPC — single round-trip for HomePage. */
+export type HomeData = {
+  tournaments: Tournament[]
+  surveys: Survey[]
+  my_responded_survey_ids: string[]
+  my_registered_tournament_ids: string[]
+  sessions: PlaySession[]
+  activity_types: ActivityType[]
+  session_checkin_counts: Record<string, number>
+  session_attendees: Record<string, AttendeeLiteRow[]>
+  session_walk_in_counts: Record<string, number>
+  my_session_checkin_ids: string[]
+  host_coach_members: AttendeeLiteRow[]
+  my_opt_out_session_ids: string[]
+  me_id: string
+  generated_at: string
+}
+
 export type SessionCheckin = {
   id: string
   session_id: string

@@ -34,6 +34,8 @@ export function MembersPage() {
   const [query, setQuery] = useState('')
   const [skillFilter, setSkillFilter] = useState<SkillLevel | 'all'>('all')
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
+  const [displayCount, setDisplayCount] = useState(30)
+  const PAGE_SIZE = 30
 
   useEffect(() => {
     let mounted = true
@@ -96,6 +98,17 @@ export function MembersPage() {
     () => filtered.filter((m) => !m.is_host && !m.is_coach),
     [filtered]
   )
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(PAGE_SIZE)
+  }, [query, skillFilter, roleFilter])
+
+  const visibleOthers = useMemo(
+    () => others.slice(0, displayCount),
+    [others, displayCount]
+  )
+  const hiddenCount = Math.max(0, others.length - displayCount)
 
   return (
     <div>
@@ -197,7 +210,18 @@ export function MembersPage() {
             Không có thành viên phù hợp
           </div>
         )}
-        {!loading && others.map((m) => <CompactMemberRow key={m.id} member={m} />)}
+        {!loading && visibleOthers.map((m) => <CompactMemberRow key={m.id} member={m} />)}
+        {!loading && hiddenCount > 0 && (
+          <button
+            onClick={() => setDisplayCount((c) => c + PAGE_SIZE)}
+            className="w-full mt-2 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+          >
+            Hiển thị thêm{' '}
+            <span className="text-gray-500">
+              ({Math.min(PAGE_SIZE, hiddenCount)} / còn {hiddenCount})
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Fallback: nếu không có me, vẫn render đầy đủ list cũ */}

@@ -51,6 +51,9 @@ export function CheckinLandingPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [referral, setReferral] = useState('')
+  // Honeypot — hidden field, real users never fill it; bots scraping the
+  // DOM tend to autofill all inputs they find
+  const [honeypot, setHoneypot] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [checkedInSessions, setCheckedInSessions] = useState<Set<string>>(new Set())
   const [checkingInSessionId, setCheckingInSessionId] = useState<string | null>(null)
@@ -103,6 +106,11 @@ export function CheckinLandingPage() {
 
   async function onWalkInSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // Honeypot trap — silently pretend success for bots that filled it
+    if (honeypot.trim().length > 0) {
+      setDone(true)
+      return
+    }
     if (!fullName.trim()) {
       toast.error('Nhập họ tên')
       return
@@ -546,6 +554,31 @@ export function CheckinLandingPage() {
             </div>
 
             <form onSubmit={onWalkInSubmit} className="space-y-3">
+              {/* Honeypot — invisible to humans, bots will fill */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: '-10000px',
+                  width: '1px',
+                  height: '1px',
+                  overflow: 'hidden',
+                }}
+              >
+                <label htmlFor="company-website">
+                  Website (do not fill)
+                </label>
+                <input
+                  id="company-website"
+                  name="company-website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               <Input
                 label="Họ tên *"
                 value={fullName}

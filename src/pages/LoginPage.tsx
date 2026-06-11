@@ -6,29 +6,30 @@ import { Input } from '../components/ui/Input'
 import { useAuth } from '../hooks/useAuth'
 
 export function LoginPage() {
-  const { session, signInWithEmail, signInWithPassword, loading } = useAuth()
+  const { session, signInWithPassword, resetPasswordForEmail, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [sending, setSending] = useState(false)
   const [forgot, setForgot] = useState(false)
-  const [magicSent, setMagicSent] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   if (!loading && session) return <Navigate to="/home" replace />
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) return
     setSending(true)
 
     if (forgot) {
-      const { error } = await signInWithEmail(email.trim())
+      const { error } = await resetPasswordForEmail(cleanEmail)
       setSending(false)
       if (error) {
         toast.error(error)
         return
       }
-      setMagicSent(true)
-      toast.success('Đã gửi link đăng nhập vào email!')
+      setResetSent(true)
+      toast.success('Đã gửi link đặt lại mật khẩu vào email!')
       return
     }
 
@@ -37,10 +38,17 @@ export function LoginPage() {
       toast.error('Nhập mật khẩu')
       return
     }
-    const { error } = await signInWithPassword(email.trim(), password)
+    const { error } = await signInWithPassword(cleanEmail, password)
     setSending(false)
     if (error) {
-      toast.error(error)
+      // Friendlier mapping for the common errors
+      if (/invalid login credentials/i.test(error)) {
+        toast.error('Email hoặc mật khẩu không đúng')
+      } else if (/email not confirmed/i.test(error)) {
+        toast.error('Vui lòng xác nhận email trước khi đăng nhập')
+      } else {
+        toast.error(error)
+      }
     }
   }
 
@@ -57,28 +65,51 @@ export function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          {magicSent ? (
-            <div className="text-center space-y-3 py-4">
-              <div className="text-5xl">📧</div>
-              <p className="text-sm text-gray-700">
-                Link đăng nhập đã gửi đến<br />
-                <strong>{email}</strong>
+          {resetSent ? (
+            <div className="text-center py-2">
+              <div className="text-5xl mb-2">📧</div>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">
+                Kiểm tra email
+              </h2>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Em đã gửi link đặt lại mật khẩu đến{' '}
+                <strong className="text-gray-900">{email}</strong>
               </p>
-              <p className="text-xs text-gray-500">
-                Mở email và bấm vào link để đăng nhập tự động.
+              <ol className="text-xs text-gray-700 mt-4 space-y-2 text-left bg-amber-50 rounded-xl p-3">
+                <li className="flex gap-2">
+                  <span className="font-bold text-amber-700">1.</span>
+                  <span>Mở email (cả thư mục Spam nếu cần)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-amber-700">2.</span>
+                  <span>Click link để đặt mật khẩu mới</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-amber-700">3.</span>
+                  <span>Đăng nhập với mật khẩu mới</span>
+                </li>
+              </ol>
+              <p className="text-[11px] text-gray-500 mt-3">
+                Link có hiệu lực trong 1 giờ
               </p>
               <button
                 onClick={() => {
-                  setMagicSent(false)
+                  setResetSent(false)
                   setForgot(false)
+                  setPassword('')
                 }}
-                className="text-xs text-primary font-semibold mt-3"
+                className="text-xs text-primary font-semibold mt-4"
               >
-                ← Quay lại
+                ← Quay lại đăng nhập
               </button>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-3">
+              {forgot && (
+                <p className="text-xs text-gray-600 -mb-1">
+                  Nhập email tài khoản — em sẽ gửi link đặt lại mật khẩu
+                </p>
+              )}
               <Input
                 type="email"
                 label="Email"
@@ -101,10 +132,9 @@ export function LoginPage() {
                 />
               )}
               <Button type="submit" loading={sending} className="w-full !mt-4">
-                {forgot ? 'Gửi link đăng nhập' : 'Đăng nhập'}
+                {forgot ? 'Gửi link đặt lại mật khẩu' : 'Đăng nhập'}
               </Button>
 
-              {/* Quên password / Magic link fallback */}
               <button
                 type="button"
                 onClick={() => setForgot(!forgot)}
@@ -112,7 +142,7 @@ export function LoginPage() {
               >
                 {forgot
                   ? '← Đăng nhập bằng mật khẩu'
-                  : 'Quên mật khẩu? Gửi link qua email →'}
+                  : 'Quên mật khẩu?'}
               </button>
             </form>
           )}

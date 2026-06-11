@@ -12,6 +12,10 @@ type AuthContextValue = {
   signInWithEmail: (email: string) => Promise<{ error: string | null }>
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithPassword: (email: string, password: string) => Promise<{ error: string | null; needsConfirm: boolean }>
+  /** Send password reset email. User clicks link → lands on /reset-password */
+  resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>
+  /** Set a new password — requires active session (from reset email link or already signed in) */
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshMember: () => Promise<void>
 }
@@ -103,6 +107,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  const resetPasswordForEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return { error: error?.message ?? null }
+  }
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return { error: error?.message ?? null }
+  }
+
   const refreshMember = async () => {
     if (session?.user) await fetchMember(session.user.id)
   }
@@ -118,6 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithEmail,
         signInWithPassword,
         signUpWithPassword,
+        resetPasswordForEmail,
+        updatePassword,
         signOut,
         refreshMember,
       }}

@@ -56,6 +56,9 @@ const PrivacyPage = lazy(() =>
 const TermsPage = lazy(() =>
   import('./pages/TermsPage').then((m) => ({ default: m.TermsPage }))
 )
+const ResetPasswordPage = lazy(() =>
+  import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage }))
+)
 
 /** Fallback shown for non-Layout public routes (login/signup/checkin) */
 function PublicFallback() {
@@ -110,6 +113,16 @@ function App() {
               <RouteErrorBoundary>
                 <Suspense fallback={<PublicFallback />}>
                   <TermsPage />
+                </Suspense>
+              </RouteErrorBoundary>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <RouteErrorBoundary>
+                <Suspense fallback={<PublicFallback />}>
+                  <ResetPasswordPage />
                 </Suspense>
               </RouteErrorBoundary>
             }

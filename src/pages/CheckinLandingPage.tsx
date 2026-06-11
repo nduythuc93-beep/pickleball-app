@@ -649,7 +649,7 @@ export function CheckinLandingPage() {
           <img
             src="/icon-192.png"
             alt="8FM Pickleball"
-            className="w-24 h-24 mx-auto mb-3 rounded-full shadow-lg ring-4 ring-white object-cover"
+            className="w-20 h-20 mx-auto mb-3 rounded-full object-cover drop-shadow-md"
           />
           <h1 className="text-2xl font-bold text-gray-900">8FM Pickleball</h1>
           <p className="text-sm text-gray-500 mt-1">Chào mừng anh/chị đến sân!</p>

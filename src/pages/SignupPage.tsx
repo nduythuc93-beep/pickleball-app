@@ -228,7 +228,7 @@ export function SignupPage() {
             <img
               src="/icon-192.png"
               alt="8FM Pickleball"
-              className="w-16 h-16 mx-auto mb-3 rounded-full shadow-md ring-2 ring-primary/20 object-cover"
+              className="w-14 h-14 mx-auto mb-3 rounded-full object-cover drop-shadow-sm"
             />
             <h1 className="text-xl font-bold text-gray-900">Tham gia 8FM CLB</h1>
             <p className="text-xs text-gray-500 mt-1">3 bước đơn giản</p>

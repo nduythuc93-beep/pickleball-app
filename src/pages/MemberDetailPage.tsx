@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SkillBadge } from '../components/members/SkillBadge'
 import { RoleBadges } from '../components/members/RoleBadges'
+import { DangerZone } from '../components/members/DangerZone'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import type { Member, SkillLevel } from '../types/database'
@@ -366,6 +367,13 @@ export function MemberDetailPage() {
         <div className="text-xs text-gray-400 text-center pt-2">
           Tham gia từ {new Date(member.joined_at).toLocaleDateString('vi-VN')}
         </div>
+
+        {/* Danger zone — only on own profile */}
+        {isOwn && (
+          <div className="pt-4">
+            <DangerZone />
+          </div>
+        )}
       </div>
     </div>
   )

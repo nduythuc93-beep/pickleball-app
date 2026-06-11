@@ -646,8 +646,12 @@ export function CheckinLandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white p-4">
       <div className="max-w-sm w-full mx-auto py-6">
         <div className="text-center mb-5">
-          <div className="text-5xl mb-2">🏓</div>
-          <h1 className="text-2xl font-bold text-gray-900">CLB Pickleball</h1>
+          <img
+            src="/icon-192.png"
+            alt="8FM Pickleball"
+            className="w-24 h-24 mx-auto mb-3 rounded-full shadow-lg ring-4 ring-white object-cover"
+          />
+          <h1 className="text-2xl font-bold text-gray-900">8FM Pickleball</h1>
           <p className="text-sm text-gray-500 mt-1">Chào mừng anh/chị đến sân!</p>
         </div>
 

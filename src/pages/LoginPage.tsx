@@ -57,10 +57,12 @@ export function LoginPage() {
       <div className="max-w-sm w-full">
         {/* Logo + branding */}
         <div className="text-center mb-6">
-          <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-primary flex items-center justify-center text-4xl shadow-md">
-            🏓
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Pickleball CLB</h1>
+          <img
+            src="/icon-192.png"
+            alt="8FM Pickleball"
+            className="w-24 h-24 mx-auto mb-3 rounded-full shadow-lg ring-4 ring-white object-cover"
+          />
+          <h1 className="text-2xl font-bold text-gray-900">8FM Pickleball</h1>
           <p className="text-sm text-gray-500 mt-1">Đăng nhập để tiếp tục</p>
         </div>
 

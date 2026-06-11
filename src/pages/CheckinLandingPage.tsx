@@ -9,6 +9,10 @@ import {
   Calendar,
   MapPin,
   CheckCircle2,
+  BellRing,
+  Share2,
+  UserPlus,
+  Copy,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -165,23 +169,141 @@ export function CheckinLandingPage() {
     return (
       <div className="min-h-screen bg-gray-50 pb-10">
         {/* Success header with gradient */}
-        <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 text-white p-6 pb-10 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 text-white p-6 pb-12 relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full" />
           <div className="absolute -left-12 -bottom-12 w-40 h-40 bg-white/5 rounded-full" />
           <div className="relative text-center">
             <div className="text-5xl mb-2">{checkedInSessions.size > 0 ? '🎉' : '👋'}</div>
             <h1 className="text-2xl font-bold">
               {checkedInSessions.size > 0
-                ? 'Đã ghi nhận tham gia!'
+                ? 'Xác nhận thành công!'
                 : `Chào ${fullName}!`}
             </h1>
             <p className="text-sm opacity-95 mt-1">
               {checkedInSessions.size > 0
-                ? 'Chúc anh/chị đánh vui vẻ'
+                ? 'Hẹn gặp anh/chị tại sân 🏓'
                 : 'Chọn buổi muốn tham gia bên dưới ↓'}
             </p>
           </div>
         </div>
+
+        {/* ============ REASSURANCE CARD ============ */}
+        {checkedInSessions.size > 0 && (
+          <div className="px-4 -mt-7 mb-3 relative z-10">
+            <div className="bg-white rounded-2xl shadow-xl p-4 border border-emerald-100">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                  <BellRing className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900">
+                    Host &amp; Admin đã nhận thông tin
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    CLB đã ghi nhận, hẹn gặp anh/chị tại sân
+                  </p>
+                </div>
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tên</span>
+                  <span className="font-semibold text-gray-900">{fullName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">SĐT</span>
+                  <span className="font-semibold text-gray-900">{phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Thời gian</span>
+                  <span className="font-semibold text-gray-900">
+                    {new Date().toLocaleString('vi-VN', {
+                      timeZone: 'Asia/Ho_Chi_Minh',
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============ SESSION DETAIL — "Hẹn anh/chị tại" ============ */}
+        {checkedInSessions.size > 0 && (() => {
+          const firstId = Array.from(checkedInSessions)[0]
+          const sess = todaySessions.find((s) => s.id === firstId)
+          if (!sess) return null
+          const at = activityTypes.find((a) => a.key === sess.activity_type)
+          const style = ACTIVITY_STYLE[sess.activity_type]
+          return (
+            <div className="px-4 mb-3">
+              <div
+                className={cn(
+                  'rounded-2xl p-4 text-white shadow-lg relative overflow-hidden',
+                  style.gradient
+                )}
+              >
+                <Trophy className="absolute -right-5 -top-5 w-28 h-28 opacity-10 rotate-12" />
+                <div className="relative">
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-90 mb-1.5">
+                    📅 Hẹn anh/chị tại
+                  </p>
+                  <h3 className="text-xl font-bold leading-tight">{at?.label}</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-white/15 backdrop-blur rounded-lg p-2.5">
+                      <div className="opacity-80 text-[10px] uppercase font-semibold tracking-wide">
+                        Thời gian
+                      </div>
+                      <div className="font-bold mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {formatTime(sess.start_time)} - {formatTime(sess.end_time)}
+                      </div>
+                      <div className="text-[10px] opacity-90 mt-0.5">
+                        {formatDateShort(sess.session_date)}
+                      </div>
+                    </div>
+                    <div className="bg-white/15 backdrop-blur rounded-lg p-2.5">
+                      <div className="opacity-80 text-[10px] uppercase font-semibold tracking-wide">
+                        Địa điểm
+                      </div>
+                      <div className="font-bold mt-0.5 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {sess.venue}
+                      </div>
+                      <div className="text-[10px] opacity-90 mt-0.5">
+                        Phí {formatVnd(sess.price_vnd)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 bg-white/15 backdrop-blur rounded-lg p-2.5 text-xs flex items-start gap-2">
+                    <span className="text-base">💡</span>
+                    <span className="leading-relaxed">
+                      <strong>Đến sớm 5-10 phút</strong> để Host nhận diện và sắp xếp sân
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ============ INVITE FRIEND ============ */}
+        {checkedInSessions.size > 0 && (
+          <InviteFriend
+            sessionLabel={(() => {
+              const firstId = Array.from(checkedInSessions)[0]
+              const sess = todaySessions.find((s) => s.id === firstId)
+              const at = activityTypes.find((a) => a.key === sess?.activity_type)
+              if (!sess || !at) return ''
+              return `${at.label} · ${formatDateShort(sess.session_date)} ${formatTime(sess.start_time)}-${formatTime(sess.end_time)} · ${sess.venue}`
+            })()}
+          />
+        )}
 
         {/* Signup CTA — chìm xuống từ header */}
         <div className="px-4 -mt-6 mb-3 relative z-10">
@@ -575,6 +697,81 @@ export function CheckinLandingPage() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Invite a friend to join the social session.
+ * Uses Web Share API on mobile (Zalo, Messenger, etc.) with copy-link fallback.
+ */
+function InviteFriend({ sessionLabel }: { sessionLabel: string }) {
+  const checkinUrl = `${window.location.origin}/checkin`
+  const shareText = sessionLabel
+    ? `Tới chơi Pickleball với mình tại 8FM CLB!\n📅 ${sessionLabel}\n\nQuét QR check-in 15 giây → ${checkinUrl}`
+    : `Tới chơi Pickleball với mình tại 8FM CLB! Quét QR check-in 15 giây → ${checkinUrl}`
+
+  const canNativeShare =
+    typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+
+  async function handleShare() {
+    if (canNativeShare) {
+      try {
+        await navigator.share({
+          title: '8FM Pickleball — Cùng đi đánh nhé!',
+          text: shareText,
+          url: checkinUrl,
+        })
+      } catch {
+        // user cancelled — silent
+      }
+    } else {
+      handleCopy()
+    }
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(shareText)
+      toast.success('Đã copy lời mời 📋')
+    } catch {
+      toast.error('Không copy được, anh/chị copy thủ công nhé')
+    }
+  }
+
+  return (
+    <div className="px-4 mb-3">
+      <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border border-purple-100 rounded-2xl p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+            <UserPlus className="w-5 h-5 text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-gray-900">Mời bạn cùng đi</p>
+            <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
+              Đánh đôi vui hơn — share link cho bạn để cùng đến sân
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleShare}
+            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-transform"
+          >
+            <Share2 className="w-4 h-4" />
+            {canNativeShare ? 'Chia sẻ' : 'Copy lời mời'}
+          </button>
+          {canNativeShare && (
+            <button
+              onClick={handleCopy}
+              className="px-3 bg-white text-purple-700 border border-purple-200 font-semibold text-sm py-2.5 rounded-xl flex items-center justify-center gap-1 active:scale-[0.98] transition-transform"
+              aria-label="Copy link"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

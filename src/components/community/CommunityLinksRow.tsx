@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Globe } from 'lucide-react'
+import { ArrowRight, Globe, Users } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/cn'
 import type { CommunityLink } from '../../types/database'
@@ -7,11 +7,16 @@ import type { CommunityLink } from '../../types/database'
 type Variant = 'compact' | 'prominent'
 
 /**
- * Public row of social channel links.
- * Only renders if at least one platform has an active URL set by admin.
+ * Public display of admin-configured social channels.
  *
- * compact   — small chip row (e.g. inside walk-in landing)
- * prominent — banner card with header (e.g. on HomePage)
+ * Layout is adaptive to the number of active channels:
+ *  1 channel  → big hero CTA banner (max attention to the lone channel)
+ *  2 channels → split 2-col cards with brand color backgrounds
+ *  3 channels → 3-col icon grid under a section header
+ *  4-5       → horizontal snap-scroll carousel
+ *  6+        → wrapping pill row (compact)
+ *
+ * variant="compact" forces the small pill-row layout regardless of count.
  */
 export function CommunityLinksRow({ variant = 'prominent' }: { variant?: Variant }) {
   const [links, setLinks] = useState<CommunityLink[]>([])
@@ -38,84 +43,237 @@ export function CommunityLinksRow({ variant = 'prominent' }: { variant?: Variant
 
   if (loading || links.length === 0) return null
 
-  if (variant === 'compact') {
-    return (
-      <div className="flex items-center gap-2 flex-wrap">
-        {links.map((link) => (
-          <CompactPill key={link.platform} link={link} />
-        ))}
-      </div>
-    )
-  }
+  if (variant === 'compact') return <PillsLayout links={links} />
 
+  // Adaptive prominent layout
+  if (links.length === 1) return <HeroLayout link={links[0]} />
+  if (links.length === 2) return <DuoLayout links={links} />
+  if (links.length === 3) return <TrioLayout links={links} />
+  if (links.length <= 5) return <CarouselLayout links={links} />
+  return <PillsLayout links={links} withHeader />
+}
+
+// ============================================================
+// LAYOUT: 1 channel — full-width hero CTA
+// ============================================================
+function HeroLayout({ link }: { link: CommunityLink }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm">
-      <div className="flex items-center gap-2 mb-2.5">
-        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Globe className="w-3.5 h-3.5 text-primary" />
+    <a
+      href={link.url ?? '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block relative overflow-hidden rounded-2xl shadow-lg active:scale-[0.98] transition-transform"
+      style={{
+        background: `linear-gradient(135deg, ${link.brand_color} 0%, ${darken(link.brand_color, 0.18)} 100%)`,
+      }}
+    >
+      {/* Decorative bubbles */}
+      <div className="absolute -right-10 -top-10 w-44 h-44 bg-white/10 rounded-full" />
+      <div className="absolute -right-20 -bottom-16 w-52 h-52 bg-white/5 rounded-full" />
+
+      <div className="relative p-4 flex items-center gap-3 text-white">
+        <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white shadow-inner flex-shrink-0">
+          <PlatformIcon platform={link.platform} className="w-7 h-7" />
         </div>
-        <div>
-          <p className="text-sm font-bold text-gray-900 leading-tight">
-            Kết nối 8FM
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-90 flex items-center gap-1">
+            <Users className="w-2.5 h-2.5" />
+            Cộng đồng 8FM
           </p>
-          <p className="text-[10px] text-gray-500 leading-tight">
-            Theo dõi cộng đồng trên các kênh
+          <p className="text-lg font-extrabold leading-tight mt-0.5">
+            Tham gia {link.label}
           </p>
+          <p className="text-[11px] opacity-90 mt-0.5 leading-tight">
+            Cập nhật sự kiện · giải đấu · ưu đãi
+          </p>
+        </div>
+        <div className="bg-white text-gray-900 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-0.5 shadow-md flex-shrink-0">
+          Vào ngay <ArrowRight className="w-3 h-3" />
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
+    </a>
+  )
+}
+
+// ============================================================
+// LAYOUT: 2 channels — split 2-col cards
+// ============================================================
+function DuoLayout({ links }: { links: CommunityLink[] }) {
+  return (
+    <div>
+      <SectionHeader />
+      <div className="grid grid-cols-2 gap-2 mt-2">
         {links.map((link) => (
-          <ChannelPill key={link.platform} link={link} />
+          <a
+            key={link.platform}
+            href={link.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative overflow-hidden rounded-2xl shadow-md active:scale-[0.97] transition-transform"
+            style={{
+              background: `linear-gradient(135deg, ${link.brand_color} 0%, ${darken(link.brand_color, 0.2)} 100%)`,
+            }}
+          >
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full" />
+            <div className="relative p-3 text-white">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-2">
+                <PlatformIcon platform={link.platform} className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-extrabold leading-tight">{link.label}</p>
+              <p className="text-[10px] opacity-90 mt-0.5 flex items-center gap-0.5 font-semibold">
+                Tham gia <ArrowRight className="w-2.5 h-2.5" />
+              </p>
+            </div>
+          </a>
         ))}
       </div>
     </div>
   )
 }
 
-function ChannelPill({ link }: { link: CommunityLink }) {
+// ============================================================
+// LAYOUT: 3 channels — section header + 3-col icon grid
+// ============================================================
+function TrioLayout({ links }: { links: CommunityLink[] }) {
   return (
-    <a
-      href={link.url ?? '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm',
-        'text-white hover:opacity-90 active:scale-95 transition-all'
-      )}
-      style={{ backgroundColor: link.brand_color }}
-    >
-      <PlatformIcon platform={link.platform} />
-      {link.label}
-    </a>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3">
+      <SectionHeader inset />
+      <div className="grid grid-cols-3 gap-2 mt-2.5">
+        {links.map((link) => (
+          <a
+            key={link.platform}
+            href={link.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative overflow-hidden rounded-xl active:scale-[0.95] transition-transform"
+            style={{
+              background: `linear-gradient(135deg, ${link.brand_color} 0%, ${darken(link.brand_color, 0.22)} 100%)`,
+            }}
+          >
+            <div className="absolute inset-0 bg-white/0 group-active:bg-white/10 transition-colors" />
+            <div className="relative p-3 text-white flex flex-col items-center text-center">
+              <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center mb-1.5">
+                <PlatformIcon platform={link.platform} className="w-4 h-4" />
+              </div>
+              <p className="text-xs font-bold leading-tight">{link.label}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
   )
 }
 
-function CompactPill({ link }: { link: CommunityLink }) {
+// ============================================================
+// LAYOUT: 4-5 channels — horizontal snap carousel
+// ============================================================
+function CarouselLayout({ links }: { links: CommunityLink[] }) {
   return (
-    <a
-      href={link.url ?? '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white shadow-sm hover:opacity-90 active:scale-95 transition-all"
-      style={{ backgroundColor: link.brand_color }}
-      aria-label={link.label}
-      title={link.label}
-    >
-      <PlatformIcon platform={link.platform} />
-    </a>
+    <div>
+      <SectionHeader />
+      <div
+        className="flex gap-2 mt-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {links.map((link) => (
+          <a
+            key={link.platform}
+            href={link.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="snap-start flex-shrink-0 w-[88px] rounded-2xl shadow-md active:scale-[0.95] transition-transform relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${link.brand_color} 0%, ${darken(link.brand_color, 0.22)} 100%)`,
+            }}
+          >
+            <div className="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full" />
+            <div className="relative p-3 text-white flex flex-col items-center text-center">
+              <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-1.5">
+                <PlatformIcon platform={link.platform} className="w-4.5 h-4.5" />
+              </div>
+              <p className="text-[11px] font-bold leading-tight">{link.label}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
   )
 }
 
-/**
- * Inline SVG icons for major social platforms.
- * Lightweight, no external icon dependency.
- */
-function PlatformIcon({ platform }: { platform: string }) {
-  const cls = 'w-3.5 h-3.5 fill-current'
+// ============================================================
+// LAYOUT: 6+ channels — wrapping pill row (compact)
+// ============================================================
+function PillsLayout({
+  links,
+  withHeader = false,
+}: {
+  links: CommunityLink[]
+  withHeader?: boolean
+}) {
+  return (
+    <div className={cn(withHeader && 'bg-white rounded-2xl shadow-sm border border-gray-100 p-3')}>
+      {withHeader && <SectionHeader inset />}
+      <div className={cn('flex items-center gap-1.5 flex-wrap', withHeader && 'mt-2.5')}>
+        {links.map((link) => (
+          <a
+            key={link.platform}
+            href={link.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold text-white shadow-sm active:scale-95 transition-transform"
+            style={{ backgroundColor: link.brand_color }}
+          >
+            <PlatformIcon platform={link.platform} className="w-3.5 h-3.5" />
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// Shared section header
+// ============================================================
+function SectionHeader({ inset = false }: { inset?: boolean }) {
+  return (
+    <div className={cn('flex items-center gap-2', inset ? 'px-0.5' : 'px-1')}>
+      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+        <Globe className="w-3.5 h-3.5 text-primary" />
+      </div>
+      <div>
+        <p className="text-sm font-bold text-gray-900 leading-tight">Kết nối 8FM</p>
+        <p className="text-[10px] text-gray-500 leading-tight">
+          Theo dõi cộng đồng trên các kênh
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// Utility: darken hex color by N percent
+// ============================================================
+function darken(hex: string, amount: number): string {
+  const sanitized = hex.replace('#', '')
+  if (sanitized.length !== 6) return hex
+  const r = Math.max(0, Math.floor(parseInt(sanitized.slice(0, 2), 16) * (1 - amount)))
+  const g = Math.max(0, Math.floor(parseInt(sanitized.slice(2, 4), 16) * (1 - amount)))
+  const b = Math.max(0, Math.floor(parseInt(sanitized.slice(4, 6), 16) * (1 - amount)))
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`
+}
+
+// ============================================================
+// Inline SVG icons per platform
+// ============================================================
+function PlatformIcon({ platform, className = 'w-4 h-4' }: { platform: string; className?: string }) {
+  const cls = `${className} fill-current`
   switch (platform) {
     case 'zalo':
       return (
-        <span className="text-[11px] font-extrabold leading-none">Z</span>
+        <span className={cn(className, 'font-extrabold flex items-center justify-center')}>
+          Z
+        </span>
       )
     case 'facebook':
       return (
@@ -154,8 +312,8 @@ function PlatformIcon({ platform }: { platform: string }) {
         </svg>
       )
     case 'website':
-      return <Globe className="w-3.5 h-3.5" />
+      return <Globe className={className} />
     default:
-      return <Globe className="w-3.5 h-3.5" />
+      return <Globe className={className} />
   }
 }

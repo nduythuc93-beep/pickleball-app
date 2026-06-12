@@ -27,6 +27,7 @@ import {
   formatTime,
   formatVnd,
 } from '../lib/sessions'
+import { CommunityLinksRow } from '../components/community/CommunityLinksRow'
 import { cn } from '../lib/cn'
 import type { ActivityType, PlaySession, Reward, Tournament } from '../types/database'
 
@@ -512,6 +513,11 @@ export function CheckinLandingPage() {
           </Link>
         </div>
 
+        {/* Community channels — follow 8FM on socials */}
+        <div className="px-4 mt-5">
+          <CommunityLinksRow variant="prominent" />
+        </div>
+
         <div className="px-4 mt-6 text-center">
           <button
             onClick={() => {
@@ -734,6 +740,11 @@ export function CheckinLandingPage() {
             </div>
           </div>
         )}
+
+        {/* Community channels — pinned at bottom of landing */}
+        <div className="mt-6">
+          <CommunityLinksRow variant="prominent" />
+        </div>
       </div>
     </div>
   )

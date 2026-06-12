@@ -163,6 +163,18 @@ export type PlaySession = {
   created_at: string
 }
 
+/** Social channel link configured by admin, displayed on public surfaces. */
+export type CommunityLink = {
+  platform: string
+  label: string
+  brand_color: string
+  url: string | null
+  is_active: boolean
+  display_order: number
+  updated_at: string
+  updated_by: string | null
+}
+
 /** Host's explicit opt-out for a Social session, blocks auto-checkin re-creation. */
 export type SessionHostOptOut = {
   session_id: string

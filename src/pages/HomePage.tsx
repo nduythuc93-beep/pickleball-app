@@ -21,6 +21,7 @@ import { useAuth } from '../hooks/useAuth'
 import { MemberAvatar } from '../components/members/MemberAvatar'
 import { SessionCardHero, SessionCardMini, type AttendeeLite } from '../components/sessions/SessionCard'
 import { AnnouncementBanner } from '../components/announcements/AnnouncementBanner'
+import { CommunityLinksRow } from '../components/community/CommunityLinksRow'
 import { cn } from '../lib/cn'
 import type {
   ActivityType,
@@ -208,6 +209,11 @@ export function HomePage() {
 
       {/* Thông báo */}
       <AnnouncementBanner />
+
+      {/* Kênh cộng đồng — admin configures, only renders if any active */}
+      <div className="px-4 mt-3">
+        <CommunityLinksRow variant="prominent" />
+      </div>
 
       {/* Sự kiện sắp tới — next upcoming sessions (auto cuộn sang buổi sau khi end) */}
       {(() => {

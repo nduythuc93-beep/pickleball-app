@@ -7,6 +7,7 @@ import { AdminWalkInTab } from '../components/walkin/AdminWalkInTab'
 import { MembersAdminTab } from '../components/admin/MembersAdminTab'
 import { SurveysAdminTab } from '../components/admin/SurveysAdminTab'
 import { TournamentsAdminTab } from '../components/admin/TournamentsAdminTab'
+import { CommunityLinksAdminTab } from '../components/admin/CommunityLinksAdminTab'
 import { cn } from '../lib/cn'
 
 type Tab =
@@ -17,6 +18,7 @@ type Tab =
   | 'rewards'
   | 'announcements'
   | 'walkin'
+  | 'community'
 
 const TABS: Array<{ key: Tab; label: string; icon: string }> = [
   { key: 'announcements', label: 'Thông báo', icon: '📢' },
@@ -26,6 +28,7 @@ const TABS: Array<{ key: Tab; label: string; icon: string }> = [
   { key: 'rewards', label: 'Quà', icon: '🎁' },
   { key: 'surveys', label: 'Khảo sát', icon: '📋' },
   { key: 'tournaments', label: 'Giải đấu', icon: '🏆' },
+  { key: 'community', label: 'Mạng XH', icon: '🌐' },
 ]
 
 export function AdminPage() {
@@ -61,6 +64,7 @@ export function AdminPage() {
       {tab === 'rewards' && <RewardsAdminTab />}
       {tab === 'surveys' && <SurveysAdminTab />}
       {tab === 'tournaments' && <TournamentsAdminTab />}
+      {tab === 'community' && <CommunityLinksAdminTab />}
     </div>
   )
 }

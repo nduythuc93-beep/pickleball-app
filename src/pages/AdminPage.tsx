@@ -8,6 +8,7 @@ import { MembersAdminTab } from '../components/admin/MembersAdminTab'
 import { SurveysAdminTab } from '../components/admin/SurveysAdminTab'
 import { TournamentsAdminTab } from '../components/admin/TournamentsAdminTab'
 import { CommunityLinksAdminTab } from '../components/admin/CommunityLinksAdminTab'
+import { DataHygieneAdminTab } from '../components/admin/DataHygieneAdminTab'
 import { cn } from '../lib/cn'
 
 type Tab =
@@ -19,6 +20,7 @@ type Tab =
   | 'announcements'
   | 'walkin'
   | 'community'
+  | 'hygiene'
 
 const TABS: Array<{ key: Tab; label: string; icon: string }> = [
   { key: 'announcements', label: 'Thông báo', icon: '📢' },
@@ -29,6 +31,7 @@ const TABS: Array<{ key: Tab; label: string; icon: string }> = [
   { key: 'surveys', label: 'Khảo sát', icon: '📋' },
   { key: 'tournaments', label: 'Giải đấu', icon: '🏆' },
   { key: 'community', label: 'Mạng XH', icon: '🌐' },
+  { key: 'hygiene', label: 'Vệ sinh', icon: '🧹' },
 ]
 
 export function AdminPage() {
@@ -65,6 +68,7 @@ export function AdminPage() {
       {tab === 'surveys' && <SurveysAdminTab />}
       {tab === 'tournaments' && <TournamentsAdminTab />}
       {tab === 'community' && <CommunityLinksAdminTab />}
+      {tab === 'hygiene' && <DataHygieneAdminTab />}
     </div>
   )
 }
